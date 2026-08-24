@@ -1,2 +1,7 @@
 .DS_Store
 **/.DS_Store
+
+# raw staging folders — source images live in assets/img/ once processed
+/Dynometer/
+/Hoverboard/
+/PCB/
