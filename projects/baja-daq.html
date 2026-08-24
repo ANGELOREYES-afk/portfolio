@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vehicle DAQ &amp; Dynamometer Control — Angelo Reyes</title>
+<meta name="description" content="A distributed CAN node and engine dynamometer brake actuator for Texas A&amp;M Baja SAE 2027 — trade studies, FEA, ESP32-C3 firmware, and a sensor front end rebuilt after bench testing.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/site.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__in">
+    <a class="topbar__name" href="../index.html"><b>ANGELO REYES</b> <span>/ EE</span></a>
+    <nav>
+      <a href="../index.html#work">Work</a>
+      <a href="scata-arm.html">SCATA Arm</a>
+      <a class="opt" href="https://github.com/ANGELOREYES-afk">GitHub</a>
+      <button class="themebtn" data-theme-toggle type="button">auto</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<div class="arthead">
+  <div class="wrap">
+    <a class="crumb" href="../index.html#work">← All work</a>
+    <h1>Vehicle Data Acquisition &amp;<br>Dynamometer Control</h1>
+    <p class="sub">
+      Texas A&amp;M Baja SAE designs, builds, and races a single-seat off-road vehicle against
+      roughly 100 university teams. The Controls subteam owns every sensor, wire,
+      microcontroller, and line of firmware on the car — plus the test equipment used to
+      validate the powertrain before it ever reaches the track.
+    </p>
+    <div class="tags">
+      <span>STM32G431RBTx</span><span>FDCAN</span><span>KiCad</span><span>ESP32-C3</span>
+      <span>C++</span><span>PID + feedforward</span><span>ANSYS</span><span>HX711</span>
+    </div>
+  </div>
+</div>
+
+<article class="article">
+  <div class="wrap">
+
+    <p>
+      My scope covered two connected problem areas. The first was an <strong>engine
+      dynamometer brake actuator</strong>: an electromechanical system that applies precise,
+      repeatable load to a spinning inertial mass so the team can generate torque-versus-RPM
+      curves for the engine and CVT. The second was the <strong>rear CAN node</strong>: a
+      custom PCB that reads powertrain and rear-suspension sensors and publishes them onto a
+      distributed bus.
+    </p>
+    <p>
+      Both required moving from a blank page to a defensible decision under real constraints —
+      limited budget, a student team's manufacturing capability, and a hard competition
+      deadline. What follows includes the cases where design review exposed a flaw in my
+      reasoning and I had to revise.
+    </p>
+
+    <div class="stats">
+      <div class="stat"><b>13,074 N</b><span>Actuator force at 40 A</span></div>
+      <div class="stat"><b>4.8×</b><span>Margin vs. target</span></div>
+      <div class="stat"><b>14</b><span>Sensors in DAQ scope</span></div>
+      <div class="stat"><b>5</b><span>Formal trade studies</span></div>
+    </div>
+
+    <!-- ============ I ============ -->
+    <h2>I — Dynamometer brake actuator</h2>
+
+    <p>
+      An inertial dynamometer measures output torque by applying a known, controllable
+      resistive load to a spinning shaft and measuring the reaction force. The engine
+      accelerates a flywheel of known moment of inertia; a hydraulic disc brake applies
+      controlled resistance while a load cell measures reaction torque through a moment arm.
+    </p>
+    <p>
+      The problem I owned was the actuator: <strong>how do we compress a hydraulic master
+      cylinder with enough force, precision, and repeatability that the resulting torque data
+      is trustworthy?</strong> The requirement is not simply "apply force" — a human pressing
+      a pedal can apply force. What a dynamometer needs is force that is <em>commandable</em>:
+      a specific value on demand, reproducible across runs, adjustable under closed-loop
+      control so the operator can hold constant load while sweeping RPM. That requirement is
+      what eliminated most of the obvious solutions.
+    </p>
+
+    <h3>Trade study — four actuation architectures</h3>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Architecture</th><th>Principle</th><th>Assessment</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Mechanical lever arm</td>
+            <td>Ball screw drives a pivoting lever; mechanical advantage multiplies force at the piston</td>
+            <td><span class="no">Rejected.</span> Mechanical advantage varies as the arm sweeps its arc, so force per unit motor torque becomes a function of stroke position. The plant goes non-linear and closed-loop force control gets substantially harder.</td>
+          </tr>
+          <tr>
+            <td>Slab ball screw</td>
+            <td>Ball screw drives a flat plate directly into the piston along a straight line</td>
+            <td><span class="yes">Selected.</span> Force is constant and predictable at every stroke position. Ball screws are inherently low-backlash from their preloaded nut. The only cost is a small delay through the reduction.</td>
+          </tr>
+          <tr>
+            <td>Slab gear drive</td>
+            <td>Same linear motion via worm gear or rack-and-pinion</td>
+            <td><span class="no">Rejected.</span> Identical kinematics, but introduces backlash requiring tight tolerance or mechanical adjusters, plus a custom housing. Backlash directly degrades position accuracy in a control loop.</td>
+          </tr>
+          <tr>
+            <td>Hydraulic solenoid</td>
+            <td>Independent circuit with pump, accumulator, proportional valve</td>
+            <td><span class="no">Rejected.</span> Requires new hardware and replaces load cell feedback with an inline pressure transducer — an entirely separate sensing strategy. Fluid leaks in a student shop are a persistent burden.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <h4>The deciding argument</h4>
+      <p>
+        The lever arm was our initial instinct, because mechanical advantage is the intuitive
+        way to multiply force. The insight that reversed that preference was recognising that
+        <strong>geometry-dependent mechanical advantage is a control problem, not just a
+        mechanical one</strong>. A lever's transfer function changes with position, meaning a
+        single set of PID gains cannot be correct across the full stroke. Linear actuation
+        removes that variable entirely, and the modest efficiency loss is worth a plant that
+        behaves the same way everywhere in its range.
+      </p>
+    </div>
+
+    <h3>Force transmission analysis</h3>
+
+    <p>
+      Once the architecture was fixed, the question became whether the selected components
+      could actually deliver. The chain runs from motor torque through gear reduction, into
+      ball screw thrust, and finally into hydraulic pressure at the piston.
+    </p>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Component</th><th>Part</th><th>Governing specification</th></tr></thead>
+        <tbody>
+          <tr><td>Motor</td><td>CIM (am-0255), brushed DC</td><td>12 VDC, 5,310 RPM free speed, 2.425 N·m stall, 133 A stall, k<sub>t</sub> = 0.01823 N·m/A</td></tr>
+          <tr><td>Motor controller</td><td>Koors40 (am-5600)</td><td>40 A continuous, 6–18 V, RC servo PWM (50 Hz, 1000–2000 µs), four-MOSFET H-bridge</td></tr>
+          <tr><td>Gearbox</td><td>Planetary, 20:1</td><td>5,310 → ~265 RPM output, torque ×20</td></tr>
+          <tr><td>Ball screw</td><td>SFU1205</td><td>12 mm diameter, 5 mm lead, single start, ~90% efficiency</td></tr>
+          <tr><td>Master cylinder</td><td>Wilwood, 5/8" bore</td><td>15.875 mm bore, piston area 1.979 × 10⁻⁴ m²</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="eq">
+      F<sub>piston</sub> = T<sub>motor</sub> × GR × η<sub>combined</sub> × (2π / L)
+      <small>η<sub>combined</sub> = η<sub>gearbox</sub> × η<sub>screw</sub> = 0.85 × 0.90 = 0.765 &nbsp;·&nbsp;
+      substituting the 5 mm lead collapses this to F<sub>piston</sub> = T<sub>motor</sub> × GR × 961.3 [N per N·m]</small>
+    </div>
+
+    <p>
+      The critical decision here was <strong>not designing to the motor's stall torque</strong>.
+      The CIM stalls at 133 A, but the Koors40 is rated for 40 A continuous. Sizing to stall
+      would mean designing for an operating point the electronics cannot sustain and the motor
+      cannot survive thermally. The real design point is the controller's continuous limit:
+    </p>
+
+    <div class="eq">
+      T<sub>motor</sub> = k<sub>t</sub> × (I − I<sub>free</sub>) = 0.01823 × (40 − 2.7) = <strong>0.680 N·m</strong>
+    </div>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Gear ratio</th><th>Piston force (N)</th><th>Piston force (lbf)</th><th>Pressure (PSI)</th><th>Margin vs. 1,000 PSI</th></tr></thead>
+        <tbody>
+          <tr><td>5:1</td><td>3,268</td><td>735</td><td>2,395</td><td>2.4×</td></tr>
+          <tr><td>10:1</td><td>6,537</td><td>1,470</td><td>4,791</td><td>4.8×</td></tr>
+          <tr><td><strong>20:1 (selected)</strong></td><td>13,074</td><td>2,940</td><td>9,580</td><td>9.6×</td></tr>
+          <tr><td>50:1</td><td>32,684</td><td>7,348</td><td>23,952</td><td>24×</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      Operational target is 1,000 lbf at the piston. At 20:1 the system produces roughly
+      2,940 lbf at continuous current — comfortably inside the ball screw assembly's 5,000 lbf
+      axial rating. The large margin is deliberate: the motor never operates near thermal
+      limits, the gearbox never approaches its load rating, and there is headroom to absorb
+      the friction and stiction that hand calculations understate.
+    </p>
+
+    <h3>Speed — the cost of that margin</h3>
+    <p>
+      Gear reduction is a direct trade of speed for torque, and it mattered to quantify what
+      20:1 costs in response time. The ball screw advances at roughly 22 mm/s, so a typical
+      25 mm master cylinder stroke takes just over one second. This is acceptable because a
+      dynamometer applies <em>steady-state</em> load during an RPM sweep — it is not reacting
+      to transients the way a vehicle brake system must. Had fast response been a requirement,
+      the correct move would have been a lower ratio traded against force margin. That trade
+      was evaluated explicitly rather than discovered later.
+    </p>
+
+    <h3>Finite element analysis</h3>
+    <p>
+      The push slab transmits ball screw thrust into the master cylinder piston, and it is the
+      structural element most likely to fail. I analysed it in ANSYS Static Structural:
+      6061-T6 aluminium, 1,000 lbf at the piston contact face, fixed supports at the mounting
+      holes.
+    </p>
+
+    <div class="callout plain">
+      <h4>Result: minimum FOS 1.023</h4>
+      <p>
+        A minimum factor of safety of 1.02 is not an acceptable final result — it means the
+        part sits at the edge of yield under nominal load with no allowance for manufacturing
+        variation, fatigue, or dynamic overshoot. The value of the analysis was in
+        <strong>locating</strong> the problem: the failure region is a geometric stress
+        concentration at a narrow waist adjacent to the upper mounting hole, not a general
+        material inadequacy. Because it is localised, thickening that waist costs very little
+        added mass. Target for the revision is FOS above 1.25, matching the static standard
+        the Chassis subteam uses.
+      </p>
+      <p>
+        This analysis is static only. It does not capture inertial loading during rapid
+        direction reversal, nor shock loading when the actuator contacts a hard limit stop.
+        Both are real conditions this part will see. Modelling them is on the revision list,
+        and I flagged it openly during design review rather than presenting the static result
+        as complete.
+      </p>
+    </div>
+
+    <!-- ============ II ============ -->
+    <h2>II — Embedded firmware and control</h2>
+
+    <figure>
+      <img src="../assets/img/dyno-daq-bench.jpg" alt="Dynamometer sensor bench: Arduino board, bench power supply, and wiring harness laid out on a work table beside the flywheel and engine.">
+      <figcaption><b>Figure 1.</b> Dynamometer sensor bench during bring-up. Perfboard sensor front ends wired back to the microcontroller, with the bench supply feeding the sensor rails. The flywheel and engine sit in frame at bottom — every reading has to survive that environment.</figcaption>
+    </figure>
+
+    <p>
+      The dynamometer controller runs on an <strong>ESP32-C3</strong>, chosen for its hardware
+      LEDC peripheral (clock-accurate PWM rather than bit-banged timing), hardware pulse
+      counting, and adequate GPIO — all under $10. The firmware is split into separate
+      translation units for sensor acquisition, motor command, and control logic, so team
+      members can modify one subsystem without understanding the others.
+    </p>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Signal</th><th>Interface</th><th>Implementation</th></tr></thead>
+        <tbody>
+          <tr><td>Primary RPM</td><td>GPIO 4, inductive</td><td>Falling-edge interrupt with <code>IRAM_ATTR</code> handler; period measured in microseconds between edges</td></tr>
+          <tr><td>Secondary RPM</td><td>GPIO 3, Hall effect</td><td>Falling-edge interrupt, 3 pulses per revolution, 5,000 RPM ceiling</td></tr>
+          <tr><td>Load cell</td><td>GPIO 5/6, HX711</td><td>24-bit ADC, calibration factor −695.0, exponential moving average filter</td></tr>
+          <tr><td>Motor command</td><td>GPIO 7, LEDC PWM</td><td>50 Hz, 14-bit resolution, 1000–2000 µs pulse width to Koors40</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Interrupt-driven period measurement</h3>
+    <p>
+      RPM is measured by timestamping edges rather than counting pulses over a fixed window.
+      Period measurement gives a fresh reading on <em>every single pulse</em> instead of
+      waiting for a window to close — which matters when tracking an engine accelerating
+      through its range.
+    </p>
+    <p>
+      Two details are worth naming. <code>IRAM_ATTR</code> forces the handler into instruction
+      RAM so it executes deterministically even during flash operations. The minimum-interval
+      guard rejects electrical noise and contact bounce by discarding any edge arriving faster
+      than physically possible at the sensor's rated maximum speed — a software debounce that
+      costs one comparison.
+    </p>
+
+<pre><span class="k">void</span> IRAM_ATTR onHallPulse() {
+  <span class="k">unsigned long</span> now = micros();
+  <span class="k">if</span> (lastHallMicros &gt; 0) {
+    <span class="k">unsigned long</span> interval = now - lastHallMicros;
+    <span class="k">if</span> (interval &gt;= MINIMUM_SECONDARY_INTERVAL_US) {   <span class="c">// debounce guard</span>
+      hallIntervalMicros = interval;
+      newHallPulse = <span class="k">true</span>;
+      lastHallMicros = now;
+    }
+  } <span class="k">else</span> {
+    lastHallMicros = now;
+  }
+}</pre>
+
+    <p>
+      Reading that shared volatile state from the main loop requires briefly disabling
+      interrupts to prevent a torn read, since the ISR can fire mid-copy:
+    </p>
+
+<pre>noInterrupts();
+interval     = hallIntervalMicros;
+hasNewPulse  = newHallPulse;
+newHallPulse = <span class="k">false</span>;
+interrupts();</pre>
+
+    <h3>Load cell filtering and failure detection</h3>
+    <p>
+      Raw HX711 readings on a machine with a spinning flywheel and a gearbox are noisy. The
+      firmware applies a first-order exponential moving average with α = 0.20. An EMA was
+      chosen over a moving-average buffer because it needs a single float of state instead of
+      an array, and its response tunes with one constant. The trade-off is <strong>phase
+      lag</strong>, which becomes a stability concern once this signal sits inside a closed
+      loop — a limitation I identified and flagged as the primary technical risk for the next
+      development phase.
+    </p>
+    <p>
+      The system also detects sensor failure rather than trusting it blindly. If no fresh
+      HX711 conversion arrives within one second, a ready flag clears and the control function
+      commands neutral:
+    </p>
+
+<pre><span class="k">if</span> (!isLoadCellReady()) {
+  writePulseUs(NEUTRAL_PULSE_US);   <span class="c">// fail to a known safe state</span>
+  <span class="k">return</span>;
+}</pre>
+
+    <p>
+      This is the difference between a system that stops and a system that keeps pushing on
+      stale data. On a rig capable of nearly 3,000 lbf, that distinction matters.
+    </p>
+
+    <h3>Control loop — current state and target architecture</h3>
+    <p>
+      The implemented controller is deliberately simple: open-loop proportional, with the load
+      cell reading scaling directly into a PWM offset from neutral, a deadband to suppress
+      noise near zero, and a clamp to prevent commanding past the actuator's range.
+    </p>
+    <p>
+      It is important to state precisely what this is <em>not</em>. There is no setpoint
+      subtraction — <code>controlForce</code> is the raw measurement, not an error term. There
+      is no integrator, so steady-state offset never gets corrected. This is the baseline that
+      proves the sensing and actuation paths work end to end, not the final controller.
+    </p>
+
+<pre><span class="k">float</span> controlForce = getLoadCellReading();
+<span class="k">if</span> (controlForce &lt; FORCE_CONTROL_DEADBAND) controlForce = 0.0f;
+
+<span class="k">int</span> pulseOffset = (<span class="k">int</span>)(controlForce * FORCE_CONTROL_GAIN);   <span class="c">// gain = 2.0</span>
+<span class="k">int</span> outputPulse = NEUTRAL_PULSE_US + pulseOffset;
+outputPulse = constrain(outputPulse, 1500, 2000);
+writePulseUs(outputPulse);</pre>
+
+    <p>
+      The designed architecture closes the loop properly, with a feedforward term that required
+      the most thought. Pure feedback control is inherently reactive — error must exist before
+      the controller responds. Feedforward uses a model of the plant to pre-compute the
+      approximate command a given torque target requires, so the PID terms only correct the
+      residual. In practice this reduces settling time and limits integrator windup during
+      long RPM sweeps.
+    </p>
+
+<pre>Secondary RPM ──▶ Vehicle Resistance Model ──▶ Target Brake Torque
+                                                       │
+                                                       ▼
+                                            ┌───────────────────┐
+   Measured Torque (load cell) ────────────▶│  Error Comparator │
+                                            └───────────────────┘
+                                                       │  error
+                                                       ▼
+                                            ┌───────────────────┐
+                                            │ PID + Feedforward │
+                                            └───────────────────┘
+                                                       │  command
+                                                       ▼
+              Koors40 ──▶ CIM ──▶ Gearbox ──▶ Ball Screw ──▶ Master Cylinder
+                                                       │
+              Load Cell ◀── Moment Arm ◀── Brake Caliper ◀── Hydraulic Line</pre>
+
+    <h3>Latency budget</h3>
+    <p>
+      When asked during design review how the system handles fast transients, I needed to
+      answer with numbers rather than reassurance.
+    </p>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Contributor</th><th>Magnitude</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>PWM command latency</td><td>20 ms</td><td>Fixed by the 50 Hz Koors40 servo protocol</td></tr>
+          <tr><td>Load cell sample rate</td><td>~12.5 ms</td><td>HX711 at 80 SPS</td></tr>
+          <tr><td>EMA filter lag</td><td>Several samples</td><td>Function of α = 0.20</td></tr>
+          <tr><td>Full actuator stroke</td><td>~1 s</td><td>Mechanical, dominated by 20:1 reduction</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      The mechanical stroke time dominates by nearly two orders of magnitude. That is the
+      correct answer to give: the electronics are not the bottleneck, the gear reduction is,
+      and that reduction was a deliberate choice favouring force precision over speed for a
+      steady-state loading application.
+    </p>
+
+    <!-- ============ III ============ -->
+    <h2>III — Rear CAN node PCB</h2>
+
+    <p>
+      The vehicle DAQ is a distributed CAN bus network with front, rear, and central nodes.
+      The rear node acquires powertrain and rear-suspension data and publishes it to the bus:
+      primary engine RPM, secondary CVT output RPM, and two rear shock potentiometers.
+    </p>
+
+    <h3>Microcontroller selection — STM32G431RBTx</h3>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Driver</th><th>Reasoning</th></tr></thead>
+        <tbody>
+          <tr><td>Ecosystem consistency</td><td>The central node uses the same STM32G4 family. One toolchain, one HAL, one debugger across every node — any member who can work on one node can work on all of them.</td></tr>
+          <tr><td>Hardware timer capture</td><td>TIM2 and TIM3 timestamp sensor edges in hardware, removing the interrupt-latency jitter present in the ESP32 software-interrupt approach used on the dyno.</td></tr>
+          <tr><td>FMAC and CORDIC</td><td>Hardware filter accelerator offloads shock-pot signal conditioning from the CPU, leaving headroom for the CAN task. Directly addresses the noise concern raised about double-differentiated potentiometer signals.</td></tr>
+          <tr><td>Native FDCAN</td><td>Integrated CAN controller eliminates an external MCP2515 and its solder joints — fewer failure points on a vibrating chassis.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      Alternatives were evaluated and rejected: the ESP32-C3 lacks CAN FD and would fragment
+      the toolchain; the ATmega328P would require an external CAN controller; the STM32F103
+      "Bluepill" has no FDCAN, and its widely-sold clones carry counterfeit-silicon reliability
+      risk that our 35%-weighted durability criterion cannot accept.
+    </p>
+
+    <h3>Two RPM channels, two completely different front ends</h3>
+
+    <figure>
+      <img src="../assets/img/dyno-hall-pickup.jpg" alt="Hall effect sensor brackets mounted on the dynamometer shaft, with signal wiring running back through lever-nut connectors to the DAQ.">
+      <figcaption><b>Figure 2.</b> Hall effect pickups mounted to the dynamometer shaft, wired back through lever-nut splices. Both RPM channels are nominally "RPM sensors," but their output topologies are different enough to demand entirely separate interface circuits.</figcaption>
+    </figure>
+
+    <h4 style="font-family:var(--mono);font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim);margin:1.6rem 0 .5rem">Hall effect — open collector</h4>
+    <p>
+      Hall sensors sink current but cannot source it; the output floats when inactive. A 4.7 kΩ
+      pull-up establishes the logic-high state. The critical detail is that
+      <strong>the pull-up goes to 3.3 V while the sensor is powered from 5 V</strong>. Because
+      the output stage is open-collector, the logic-high level is set entirely by the pull-up
+      rail — so the MCU pin never sees more than 3.3 V and no level shifting is required.
+    </p>
+    <p>
+      The 4.7 kΩ value balances two failure modes: too large and the RC time constant with
+      parasitic capacitance rounds the edges at 250 Hz operation; too small and the sensor
+      sinks excessive current. At 4.7 kΩ the sink current is 0.7 mA with adequate edge rate.
+    </p>
+
+    <h4 style="font-family:var(--mono);font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim);margin:1.6rem 0 .5rem">Inductive pickup — a design that had to be rebuilt</h4>
+    <p>
+      The inductive sensor, mounted on the ignition lead, produces a roughly 12 V bipolar pulse
+      — well beyond the STM32's 3.6 V absolute maximum. My initial design was a
+      high-impedance divider with Schottky clamping diodes:
+      V<sub>out</sub> = 12 V × (47k / 147k) = 3.84 V, clamped to 3.3 V. The impedance was
+      chosen deliberately high — 147 kΩ total, drawing only 82 µA — precisely because
+      inductive pickups have high source impedance and cannot supply meaningful current.
+    </p>
+
+    <div class="callout">
+      <h4>What bench testing revealed</h4>
+      <p>
+        It was still too much. When a teammate tested the sensor against a divider, the signal
+        sagged to <strong>2.4 V</strong> — below the logic threshold. The sensor could not
+        source even 82 µA without collapsing. My analysis had correctly identified that source
+        impedance mattered, but underestimated the magnitude by enough to make the circuit
+        non-functional.
+      </p>
+    </div>
+
+    <p>
+      The fix reframes the problem entirely. Instead of attenuating the sensor's signal, the
+      sensor is used only as a <em>switch</em>, and the logic signal is regenerated locally
+      from the board's own supply:
+    </p>
+
+<pre>                    +3.3V
+                      │
+                   [4.7k]  <span class="c">← pull-up sets logic HIGH from board supply</span>
+                      │
+SENSOR ──[10k]──┬─────┴──────▶ MCU pin
+                │
+                B  ┤ 2N3904 (NPN)
+                │
+             [10k]  E
+                │     │
+               GND   GND</pre>
+
+    <p>
+      With the transistor off, the pull-up holds the pin at 3.3 V. When the sensor fires, the
+      transistor saturates and shorts the pin to ground. The 12 V signal now only has to supply
+      base current — roughly 0.38 mA — which the sensor can comfortably provide. The sensor
+      voltage never reaches the microcontroller at all. A side effect worth documenting: the
+      transistor inverts the signal, so the timer input capture must trigger on the rising
+      edge, which corresponds to the sensor <em>releasing</em> rather than firing.
+    </p>
+    <p>
+      This was the most instructive failure of the project. The divider was not wrong in
+      principle — it was wrong for this specific sensor's drive capability, a parameter I did
+      not verify against hardware before committing. The lesson generalises:
+      <strong>a component's datasheet voltage tells you what it outputs, not what it can output
+      into a load.</strong>
+    </p>
+
+    <h3>Power integrity and EMI mitigation</h3>
+    <p>
+      Analog measurement quality is set by supply cleanliness. Two rear shock potentiometers
+      feed the STM32 ADC, and any digital switching noise on the analog supply appears directly
+      as measurement noise.
+    </p>
+    <p>
+      A <strong>600 Ω @ 100 MHz ferrite bead</strong> separates VDDA from the digital 3.3 V
+      rail. A ferrite was chosen over an inductor because ferrites dissipate high-frequency
+      energy as heat rather than storing it — an inductor in the same position forms a resonant
+      tank with the decoupling capacitors and can ring. The bead is followed by 1 µF and 10 nF
+      in parallel: two values because capacitors are frequency-dependent, with the 1 µF
+      providing bulk energy for load steps while the 10 nF has lower ESL and stays effective at
+      frequencies where the larger cap has already gone inductive.
+    </p>
+    <p>
+      Decoupling is one 100 nF capacitor per MCU supply pin — VBAT, four VDD pins, and VDDA.
+      Each supply pin has its own internal bond wire with associated inductance, so a single
+      shared capacitor cannot service all of them. A 10 µF bulk cap handles lower-frequency
+      load steps. VREF+ gets dedicated decoupling because noise on the ADC reference appears
+      on every conversion regardless of input signal quality. The schematic groups these for
+      readability, but <strong>placement, not schematic topology, determines whether decoupling
+      actually works</strong> — each must sit within a few millimetres of its pin.
+    </p>
+
+    <h3>Connector selection</h3>
+    <p>
+      Connectors were selected against the 35%-weighted durability criterion. Deutsch DT was
+      chosen: IP67 sealed for mud and water crossings, positively latched against sustained
+      vibration, with individually replaceable crimped contacts supporting the team's
+      ten-minute serviceability target. DT is rated to 13 A against DTP's 25 A; our
+      highest-current line draws under 1 A, so DT is sufficient and DTP would be
+      over-specification.
+    </p>
+    <p>
+      A practical discovery during layout: <strong>Deutsch DT connectors are wire-to-wire only
+      and have no PCB-mount variant.</strong> I spent meaningful time searching for a footprint
+      that does not exist. The standard solution is a pigtail — a board-mount header wired to a
+      DT connector on the harness. Molex Micro-Fit 3.0 with mounting pegs was selected for the
+      board side, the pegs providing strain relief so vibration loads transfer into the board
+      rather than into the solder joints.
+    </p>
+
+    <!-- ============ IV ============ -->
+    <h2>IV — Systems integration</h2>
+
+    <h3>Design review response</h3>
+    <p>
+      The Interim Design Review produced substantive criticism of the Controls subteam's scope.
+      The core message was that we had specified sensors without confirming anyone would use
+      the resulting data, and that a working simple system beats a sophisticated system
+      delivered too late. Rather than defend the original scope, I worked through the sensor
+      list with Powertrain members directly and re-sorted it against actual stated need:
+    </p>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Sensor</th><th>Before</th><th>After</th><th>Basis for change</th></tr></thead>
+        <tbody>
+          <tr><td>CVT belt temperature</td><td>Critical</td><td>Expendable</td><td>Powertrain confirmed it does not inform driving or tuning decisions</td></tr>
+          <tr><td>Gearbox casing temp</td><td>Not planned</td><td>Conditional</td><td>Useful during runs, but an IR gun gives delta measurements without a permanent sensor</td></tr>
+          <tr><td>Sheave position</td><td>Not planned</td><td>Added</td><td>Reviewers identified a genuine measurement gap for validating CVT behaviour</td></tr>
+          <tr><td>Throttle position</td><td>Critical</td><td>Under review</td><td>Flagged as potentially redundant with existing measurements</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      Removing a sensor I had already justified is not a loss. The scope reduction was the
+      correct engineering response to the observation that instrumentation nobody consumes is
+      wasted effort, added mass, and another failure point on the harness.
+    </p>
+
+    <h3>CVT slip measurement — a methodology contribution</h3>
+    <p>
+      The most technically interesting outcome of that conversation was a measurement gap
+      nobody had closed. Primary and secondary RPM together give a calculated CVT ratio, but
+      that calculation silently assumes the belt is not slipping. If the belt slips, the RPM
+      ratio changes and there is no way to distinguish slip from a legitimate ratio change.
+    </p>
+    <p>
+      Adding a time-of-flight sensor measuring the physical sheave gap provides an independent
+      measurement of where the belt actually sits:
+    </p>
+
+    <div class="eq">
+      Slip = (RPM<sub>primary</sub> / RPM<sub>secondary</sub>) − Ratio<sub>expected</sub>(sheave position)
+      <small>Two independent paths to the same physical quantity — their disagreement is itself the measurement of interest.</small>
+    </div>
+
+    <p>
+      This gives Powertrain a slip map against throttle and RPM, validation of the CVT shift
+      curve against tuning targets, and confirmation of secondary engagement RPM — three
+      deliverables that did not exist before. The proposed sensor is a VL53L1X (I²C, 1 mm
+      resolution, under $10), mounted identically on the vehicle and on the dynamometer so
+      bench and track data stay directly comparable.
+    </p>
+
+    <!-- ============ JUDGMENT ============ -->
+    <h2>What I took from it</h2>
+
+    <p>
+      The individual analyses matter less than the decision patterns behind them. Four are
+      worth naming explicitly.
+    </p>
+
+    <ol>
+      <li><strong>Design to the real constraint, not the headline specification.</strong> The CIM stalls at 133 A, but the controller sustains 40 A. Sizing to stall torque would have produced a system that looks powerful on a slide and fails thermally in practice. The operating point is set by whichever component in the chain gives out first.</li>
+      <li><strong>Recognise when a mechanical choice is really a control choice.</strong> The lever arm was rejected not because it could not generate force, but because its position-dependent transfer function would have made a single set of gains incorrect across the stroke. That reasoning is only available if you evaluate mechanical and control architecture together rather than sequentially.</li>
+      <li><strong>Trust measurement over analysis.</strong> The voltage divider was calculated correctly and still failed on the bench. When hardware disagreed with the math, the right response was not to defend the calculation but to identify the unmodelled parameter — source drive capability — and rebuild around a topology that does not depend on it.</li>
+      <li><strong>Treat scope reduction as progress.</strong> Cutting sensors I had already justified was correct once it was clear nobody would consume the data. Instrumentation producing unused data is not neutral; it costs mass, harness complexity, failure modes, and hours that should go elsewhere.</li>
+    </ol>
+
+    <div class="callout plain">
+      <h4>Current status</h4>
+      <p>
+        Rear node schematic complete through ERC. Dynamometer firmware running on hardware with
+        load cell and both RPM channels validated. Actuator mechanical design revised following
+        FEA. Next phase: PCB layout and fabrication, closed-loop PID implementation, and the
+        first integrated dynamometer run coordinated with Powertrain.
+      </p>
+    </div>
+
+    <nav class="artnav">
+      <a href="../index.html#work">← All work</a>
+      <a href="scata-arm.html">SCATA Arm →</a>
+    </nav>
+
+  </div>
+</article>
+
+</main>
+
+<footer>
+  <div class="wrap in">
+    <span>Angelo Reyes — Electrical Engineering, Texas A&amp;M University</span>
+    <a href="../index.html">Home</a>
+    <span class="sp">Controls / DAQ · Baja SAE 2027</span>
+  </div>
+</footer>
+
+</body>
+</html>

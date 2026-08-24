@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Angelo Reyes — Electrical Engineering</title>
+<meta name="description" content="Angelo Reyes — Electrical Engineering at Texas A&amp;M. Embedded systems, closed-loop control, PCB design, and thermal actuator research.">
+<meta name="author" content="Angelo Reyes">
+<meta property="og:title" content="Angelo Reyes — Electrical Engineering">
+<meta property="og:description" content="Embedded systems, closed-loop control, PCB design, and thermal actuator research.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+<link rel="stylesheet" href="assets/css/site.css">
+<script src="assets/js/site.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__in">
+    <a class="topbar__name" href="index.html"><b>ANGELO REYES</b> <span>/ EE</span></a>
+    <nav>
+      <a href="#work">Work</a>
+      <a href="#experience">Experience</a>
+      <a class="opt" href="#skills">Skills</a>
+      <a class="opt" href="https://github.com/ANGELOREYES-afk">GitHub</a>
+      <button class="themebtn" data-theme-toggle type="button">auto</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<!-- ================= HERO ================= -->
+<div class="hero">
+  <div class="wrap">
+    <div class="hero__kicker">Electrical Engineering · Texas A&amp;M · B.S. expected May 2029</div>
+    <h1>I build the electronics<br>that measure and control<br>moving machines.</h1>
+    <p class="hero__lede">
+      Embedded firmware, closed-loop control, and PCB design — currently on the
+      <strong>Controls &amp; DAQ subteam for Texas A&amp;M Baja SAE 2027</strong>, and running an
+      independent research build on <strong>liquid-cooled robotic actuators</strong>.
+      Most of what I care about happens where a datasheet number meets a bench measurement
+      that disagrees with it.
+    </p>
+    <div class="linkrow">
+      <a class="primary" href="#work">Selected work ↓</a>
+      <a href="mailto:angelohenaoreyes@yahoo.com">Email</a>
+      <a href="https://github.com/ANGELOREYES-afk">GitHub</a>
+      <a href="https://linkedin.com/in/angelo-reyes">LinkedIn</a>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b>14</b><span>Sensors in DAQ scope</span></div>
+      <div class="stat"><b>13,074 N</b><span>Actuator force at 40 A</span></div>
+      <div class="stat"><b>5</b><span>Formal trade studies</span></div>
+      <div class="stat"><b>3.66</b><span>GPA, Texas A&amp;M EE</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= WORK ================= -->
+<section id="work">
+  <div class="wrap">
+    <div class="sechead">
+      <span class="num">01</span>
+      <h2>Selected work</h2>
+      <span class="note">deep write-ups →</span>
+    </div>
+
+    <div class="cards">
+
+      <a class="card" href="projects/baja-daq.html">
+        <div class="card__id"><span class="dot"></span> BAJA-DAQ · 2026 – present</div>
+        <h3>Vehicle Data Acquisition &amp; Dynamometer Control</h3>
+        <p>
+          A distributed CAN bus node and an engine dynamometer brake actuator for a
+          single-seat off-road race car. Four-architecture trade study, force transmission
+          analysis, ANSYS FEA, ESP32-C3 firmware, and a sensor front end that had to be
+          rebuilt from scratch after the bench disagreed with the math.
+        </p>
+        <div class="tags">
+          <span>STM32G431</span><span>FDCAN</span><span>KiCad</span>
+          <span>ESP32-C3</span><span>PID</span><span>ANSYS</span>
+        </div>
+      </a>
+
+      <a class="card" href="projects/scata-arm.html">
+        <div class="card__id"><span class="dot"></span> SCATA · 2025 – present</div>
+        <h3>Liquid-Cooled Proximal-Actuated Robot Arm</h3>
+        <p>
+          Electric arms are limited by heat, not magnetics. SCATA attacks that ceiling on
+          three fronts at once — resin-sealed liquid cooling, motors relocated to a static
+          base, and a controller that tapers torque against a live winding-temperature
+          estimate instead of tripping a cutoff.
+        </p>
+        <div class="tags">
+          <span>BLDC / FOC</span><span>moteus</span><span>Thermal control</span>
+          <span>CAD</span><span>ESP32</span><span>18 sources</span>
+        </div>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+<!-- ================= EXPERIENCE ================= -->
+<section id="experience">
+  <div class="wrap">
+    <div class="sechead">
+      <span class="num">02</span>
+      <h2>Experience</h2>
+      <span class="note">College Station &amp; Houston, TX</span>
+    </div>
+
+    <div class="entry">
+      <div class="entry__when"><b>Mar 2026 — present</b>College Station, TX</div>
+      <div>
+        <h3>Controls &amp; Data Acquisition Engineer</h3>
+        <p class="entry__org">Texas A&amp;M Baja SAE 2027 — Controls / DAQ subteam</p>
+        <ul>
+          <li>Designed a complete KiCad schematic for a distributed CAN node (STM32G431RBTx, native FDCAN) acquiring engine and CVT secondary RPM plus rear shock potentiometers across a 14-sensor, 12 V vehicle network.</li>
+          <li>Specified harness and connector architecture to an IP67 ingress standard — Deutsch DT for sealed field-serviceable runs, Molex Micro-Fit 3.0 board-mount pigtails transferring vibration load into the board rather than into solder joints.</li>
+          <li>Rebuilt the inductive RPM front end after bench testing invalidated the design, replacing attenuation with a 2N3904 open-collector topology that regenerates logic level from board supply.</li>
+          <li>Built dynamometer test instrumentation on ESP32-C3 with interrupt-driven period capture, HX711 load cell filtering, and fail-safe detection commanding neutral on stale data at ~3,000 lbf.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="entry">
+      <div class="entry__when"><b>Nov 2025 — Jun 2026</b>College Station, TX</div>
+      <div>
+        <h3>Hardware Security Research Assistant</h3>
+        <p class="entry__org">Texas A&amp;M University</p>
+        <ul>
+          <li>Tuned CPU architecture for computationally heavy zero-knowledge proof protocols, targeting core allocation across NTT, MSM, hash, and sum-check algorithms alongside FPGA/VLSI design.</li>
+          <li>Implemented NIST FIPS post-quantum lattice-based cryptography with learning-with-errors key encapsulation and decapsulation.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="entry">
+      <div class="entry__when"><b>Aug 2025 — May 2026</b>College Station, TX</div>
+      <div>
+        <h3>Technical Lead — ThinkTank TAMU</h3>
+        <p class="entry__org">AIAA Undergraduate Space Mission Design Challenge</p>
+        <ul>
+          <li>Designed CubeSat subsystems — telemetry, solar weather monitoring, communication protocols, mission architecture.</li>
+          <li>Proposed heliocentric orbits holding a link across black-shadow periods in the Mars–Earth direct transmission line.</li>
+          <li>Led the concept of operations, trade studies, and modeling of the consolidated instrument.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="entry">
+      <div class="entry__when"><b>Jun 2024 — Jun 2025</b>Houston, TX</div>
+      <div>
+        <h3>AI/ML Engineer &amp; Founder</h3>
+        <p class="entry__org">Ankel Web Services</p>
+        <ul>
+          <li>Founded an AI-powered customer support web service for local businesses; fine-tuned language models on client FAQ datasets to create autonomous support agents.</li>
+          <li>Built full-stack applications on a Supabase backend with Python API services, reaching ~95% customer query accuracy across 50+ daily interactions.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="entry">
+      <div class="entry__when"><b>Feb 2025</b>Houston, TX</div>
+      <div>
+        <h3>Weather Physics Research Assistant</h3>
+        <p class="entry__org">University of Houston</p>
+        <ul>
+          <li>Conducted dimensional analysis on NeuralGCM graphs to improve predicted weather model clarity by 20%; validated predictions against the ERA5 dataset.</li>
+          <li>Developed methods for detecting humidity, precipitation, and temperature anomalies.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="entry">
+      <div class="entry__when"><b>Sep 2021 — Jun 2025</b>Houston, TX</div>
+      <div>
+        <h3>Ambassador / President — Team 24626 Polaris</h3>
+        <p class="entry__org">Katy Robotics Alliance (VEX)</p>
+        <ul>
+          <li>Led the team across 50+ competitions on both operations and technical fronts; secured $3,000 in annual grants from MTS sponsors.</li>
+          <li>Built training programs for powertrain systems, CAD, and autonomous programming.</li>
+          <li>Three VEX World Championship appearances — 1st in Texas, Texas Finalist, Top 5 Skills State.</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ================= OTHER PROJECTS ================= -->
+<section id="other">
+  <div class="wrap">
+    <div class="sechead">
+      <span class="num">03</span>
+      <h2>Other projects</h2>
+      <span class="note">shorter builds</span>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card__id"><span class="dot"></span> Aerospace Scholar · Rice University</div>
+        <h3>High-Altitude Weather Balloon Payload</h3>
+        <p>
+          Designed weather-balloon experiments under variable temperature, pressure, and
+          speed at 85,000 ft. Configured LoRa radio telemetry and programmed the Arduino
+          handling raw data acquisition and power distribution.
+        </p>
+        <div class="tags"><span>LoRa</span><span>Arduino</span><span>Telemetry</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card__id"><span class="dot"></span> Science Fair Houston</div>
+        <h3>Multi-Sensor Plant Chemistry PCB</h3>
+        <p>
+          Detection of plant chemical properties from raw analog data. Designed the PCB for
+          the embedded sensor stack with onboard voltage regulation, integrating AD9833
+          waveform generation, FDC2214 capacitive sensing, and AS7263 infrared processing.
+        </p>
+        <div class="tags"><span>PCB</span><span>AD9833</span><span>FDC2214</span><span>AS7263</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card__id"><span class="dot"></span> 2024</div>
+        <h3>ORP Sensor System</h3>
+        <p>
+          Breadboard voltmeter with an I²C LCD measuring redox potential for water salinity
+          detection from 0–5000 ppm, using a hand-built agar salt bridge to carry ionic
+          movement between electrodes.
+        </p>
+        <div class="tags"><span>Arduino</span><span>C++</span><span>I²C</span><span>Electrochemistry</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card__id"><span class="dot"></span> Jul – Sep 2025</div>
+        <h3>Pixel Generation ML App</h3>
+        <p>
+          An iOS app for pixel art creation and wireless transmission — WiFi to HM-10 BLE
+          radio for real-time transfer, with denoising diffusion probabilistic models
+          generating the art itself.
+        </p>
+        <div class="tags"><span>Swift</span><span>TensorFlow</span><span>BLE</span><span>DDPM</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SKILLS ================= -->
+<section id="skills">
+  <div class="wrap">
+    <div class="sechead">
+      <span class="num">04</span>
+      <h2>Technical skills</h2>
+    </div>
+
+    <div class="skills">
+      <div class="skill">
+        <h4>Hardware &amp; PCB</h4>
+        <p>KiCad schematic capture and ERC · power distribution and decoupling strategy ·
+        ferrite-based analog supply isolation · EMI mitigation · open-collector and
+        level-shifted sensor front ends · CAN transceiver and bus termination ·
+        SMD footprint selection for hand assembly · STM32 pin planning and peripheral allocation</p>
+      </div>
+      <div class="skill">
+        <h4>Embedded systems</h4>
+        <p>C++ bare-metal and Arduino framework · interrupt service routines with IRAM
+        placement · hardware timer input capture · LEDC PWM generation · 24-bit ADC
+        interfacing · digital filter implementation · watchdog and timeout fault detection ·
+        CAN / FDCAN · STM32CubeIDE</p>
+      </div>
+      <div class="skill">
+        <h4>Controls &amp; test</h4>
+        <p>PID with feedforward · Field-Oriented Control · plant linearity analysis as a
+        design driver · latency budgeting · fail-safe state design · DAQ methodology ·
+        test plan development · weighted decision matrices</p>
+      </div>
+      <div class="skill">
+        <h4>Harness &amp; interconnect</h4>
+        <p>Automotive connector specification (Deutsch DT/DTP, Molex Micro-Fit 3.0) ·
+        IP67 ingress rating justification · wire gauge sizing · pinout documentation ·
+        board-mount pigtail strategy · strain relief and vibration survivability</p>
+      </div>
+      <div class="skill">
+        <h4>Mechanical &amp; analysis</h4>
+        <p>ANSYS Static Structural FEA · force transmission modeling through multi-stage
+        drivetrains · ball screw and gearbox selection · safety factor analysis ·
+        design for manufacture under student-shop constraints · Onshape · SolidWorks</p>
+      </div>
+      <div class="skill">
+        <h4>Languages &amp; tools</h4>
+        <p>C++ · Python · Swift · TypeScript · Verilog · LaTeX · Git / GitHub ·
+        KiCad · STM32CubeIDE · Onshape · SolidWorks · ANSYS · Overleaf</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CONTACT ================= -->
+<section id="contact">
+  <div class="wrap">
+    <div class="sechead">
+      <span class="num">05</span>
+      <h2>Get in touch</h2>
+    </div>
+    <div class="prose">
+      <p>
+        I'm looking for internships and co-ops in embedded systems, controls, test
+        engineering, and hardware design. If you have a machine that needs instrumenting,
+        I'd like to hear about it.
+      </p>
+    </div>
+    <div class="linkrow" style="margin-top:1.5rem">
+      <a class="primary" href="mailto:angelohenaoreyes@yahoo.com">angelohenaoreyes@yahoo.com</a>
+      <a href="https://linkedin.com/in/angelo-reyes">linkedin.com/in/angelo-reyes</a>
+      <a href="https://github.com/ANGELOREYES-afk">github.com/ANGELOREYES-afk</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap in">
+    <span>Angelo Reyes — Electrical Engineering, Texas A&amp;M University</span>
+    <a href="#work">Back to top</a>
+    <span class="sp">Built as a static site · no trackers</span>
+  </div>
+</footer>
+
+</body>
+</html>
