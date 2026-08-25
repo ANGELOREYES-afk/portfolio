@@ -1,6 +1,7 @@
 .DS_Store
 **/.DS_Store
 _dgm_preview.html
+_check.html
 
 # raw staging image folders — processed copies live in assets/img/
 /Dynometer/
@@ -9,3 +10,8 @@ _dgm_preview.html
 /Orp sensor/
 /Joint/
 /Cooling system demo example with drill spinning centrifuge of epoxy/
+/Pixel art generation project/
+/Vex Photos/
+
+# iOS app source — belongs in its own repo, not the portfolio site
+/Pixeltalkie/
