@@ -6,10 +6,9 @@
 <title>SCATA Arm — Liquid-Cooled Robot Manipulator — Angelo Reyes</title>
 <meta name="description" content="A resin-sealed, liquid-cooled robotic manipulator breaking the thermal ceiling on actuator torque density using proximal actuation and thermally-aware control.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
-<link rel="stylesheet" href="../assets/css/site.css">
-<script src="../assets/js/site.js"></script>
+<link rel="stylesheet" href="../assets/css/site.css?v=2">
+<script src="../assets/js/site.js?v=2"></script>
 <style>
-  /* diagram palette — inherits the page theme */
   .dgm { width: 100%; height: auto; }
   .dgm .stroke  { stroke: var(--line); fill: none; stroke-width: 1.5; }
   .dgm .metal   { fill: var(--bg-sunken); stroke: var(--ink-dim); stroke-width: 1.2; }
@@ -19,7 +18,6 @@
   .dgm .fluidln { stroke: var(--accent); stroke-width: 1.4; fill: none; }
   .dgm text     { font-family: var(--mono); font-size: 10px; fill: var(--ink-mid); }
   .dgm text.hi  { fill: var(--accent); }
-  .dgm text.t   { font-size: 11px; fill: var(--ink); }
   .pillars { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; margin: 2rem 0; max-width: var(--w-text); }
   @media (min-width: 760px) { .pillars { grid-template-columns: repeat(3, 1fr); } }
   .pillar { background: var(--bg-raised); padding: 1.15rem 1.25rem; }
@@ -35,7 +33,7 @@
     <nav>
       <a href="../index.html#work">Work</a>
       <a href="baja-daq.html">Baja DAQ</a>
-      <a class="opt" href="https://github.com/ANGELOREYES-afk">GitHub</a>
+      <a class="opt" href="orp-sensor.html">ORP</a>
       <button class="themebtn" data-theme-toggle type="button">auto</button>
     </nav>
   </div>
@@ -49,12 +47,12 @@
     <h1>The SCATA Arm</h1>
     <p class="sub">
       A resin-sealed, liquid-cooled robotic manipulator — breaking the thermal ceiling on
-      actuator torque density using proximal actuation and thermally-aware control.
+      actuator torque density.
     </p>
     <div class="tags">
-      <span class="pill wip">Design &amp; research complete · build in progress</span>
+      <span class="pill wip">Design complete · build in progress</span>
       <span>Frameless BLDC</span><span>FOC</span><span>moteus / CAN</span>
-      <span>Thermal control</span><span>Parametric CAD</span><span>18 reviewed sources</span>
+      <span>Thermal control</span><span>Parametric CAD</span>
     </div>
     <div class="linkrow" style="margin-top:1.25rem">
       <a class="primary" href="https://github.com/ANGELOREYES-afk/Actuator">Actuator — firmware, STLs, build log ↗</a>
@@ -65,221 +63,156 @@
 <article class="article">
   <div class="wrap">
 
+    <dl class="glance">
+      <div><dt>Premise</dt><dd>Electric arms are limited by <b>heat, not magnetics</b>. Remove the heat and continuous torque approaches peak torque.</dd></div>
+      <div><dt>Approach</dt><dd>Three pillars: liquid cooling, motors relocated to a static base, and a controller that tapers torque instead of tripping</dd></div>
+      <div><dt>Built</dt><dd>Hub-motor test article, spin-cure fixture, parametric clamshell CAD, rolling-joint linkage, two-DOF base layout</dd></div>
+      <div><dt>Benchmark</dt><dd>Published immersion cooling: <b>0.127 K/W</b> vs. 1.31 K/W forced air — 10× better</dd></div>
+      <div><dt>Status</dt><dd>18 sources reviewed · design complete · <b>M1 baseline test not yet run</b></dd></div>
+    </dl>
+
     <div class="callout plain">
       <h4>A note on maturity</h4>
       <p>
-        This is a design-and-research project, not a results paper. Every quantitative figure
-        attributed to published work is cited; every figure attributed to SCATA is labelled as
-        a target, a prediction, or a measurement still to be taken. <strong>No experimental
-        results are claimed that have not been produced.</strong> The instrumented-baseline
-        test described below is the gate that converts this body of design work into data, and
-        it has not yet been run.
+        This is a design-and-research project, not a results paper. Cited figures come from
+        published work; SCATA's own figures are labelled as targets or predictions.
+        <strong>No experimental results are claimed that have not been produced.</strong>
       </p>
     </div>
 
     <!-- ============ 1 ============ -->
     <h2>1 — The thermal ceiling</h2>
 
-    <p>
-      Electric robot arms are not limited by what their motors can produce. They are limited by
-      how long they can produce it before the copper windings overheat. A brushless motor will
-      deliver several times its rated continuous torque for a few seconds; the rating exists
-      because <strong>heat, not magnetics, sets the sustainable envelope</strong>.
-    </p>
-    <p>
-      Torque in a BLDC motor scales with current. Heat scales with the <em>square</em> of
-      current — resistive loss in the copper is I²R, with core eddy-current and hysteresis
-      losses stacked on top. Double the torque and you quadruple the heating. The motor will
-      happily deliver that torque; it simply cannot survive doing so.
-    </p>
-    <p>
-      Two hard limits sit behind that gap. Winding insulation degrades and eventually fails as
-      temperature climbs. More permanently, the rotor magnets have a Curie temperature —
-      roughly 80–150 °C depending on grade — beyond which they demagnetise irreversibly. That
-      is not a fault to be reset; it is torque the motor never gets back.
-    </p>
-
-    <h3>Why this matters more for arms than for anything else</h3>
-    <p>
-      A manipulator's worst thermal case is the one it spends most of its time in:
-      <strong>holding a position</strong>. Static holding produces maximum current at zero
-      mechanical output — every watt drawn becomes heat, with no motion to show for it. A
-      legged robot at least converts its current into locomotion. An arm asked to hold a
-      payload steady is a resistive heater that happens to be shaped like a robot.
-    </p>
+    <ul class="tight">
+      <li><strong>Torque scales with current; heat scales with current squared.</strong> Double the torque, quadruple the heating. The motor will deliver it — it just can't survive doing so.</li>
+      <li><strong>Two hard limits.</strong> Winding insulation degrades with temperature. More permanently, rotor magnets have a Curie point (~80–150 °C) beyond which they demagnetise irreversibly — torque the motor never gets back.</li>
+      <li><strong>Arms have the worst thermal case of any robot.</strong> Holding a position draws maximum current at zero mechanical output. A legged robot converts current into locomotion; <strong>an arm holding a payload is a resistive heater shaped like a robot.</strong></li>
+    </ul>
 
     <div class="stats">
-      <div class="stat"><b>~2.2×</b><span>Continuous current gain, VLCA</span></div>
+      <div class="stat"><b>~2.2×</b><span>Continuous current gain</span></div>
       <div class="stat"><b>6.3 → 31.3 N·m</b><span>Bare vs. immersed stator</span></div>
-      <div class="stat"><b>3.6 s</b><span>Uncooled winding at 50 A → 125 °C</span></div>
-      <div class="stat"><b>10×</b><span>Immersion vs. forced air R<sub>th</sub></span></div>
+      <div class="stat"><b>3.6 s</b><span>Uncooled 50 A → 125 °C</span></div>
+      <div class="stat"><b>10×</b><span>Immersion vs. forced air</span></div>
     </div>
 
     <p style="margin-top:1.5rem">
-      Those figures come from the published record — UT Austin/Apptronik on linear actuators,
-      UCLA RoMeLa on legged-robot actuators, and analyses targeting space robotics. The
-      3.6-second number is the one worth sitting with: at 50 A, an uncooled winding crosses its
-      temperature limit in under four seconds. The same stator, immersion-cooled, converged to
-      approximately 85 °C and never reached the limit at all — continuous torque became
-      effectively equal to peak torque. <strong>The motor was never the bottleneck. The heat
+      The 3.6-second figure is the one worth sitting with: an uncooled winding at 50 A crosses
+      its limit in under four seconds. The same stator, immersion-cooled, settled at ~85 °C and
+      never reached the limit at all. <strong>The motor was never the bottleneck. The heat
       was.</strong>
     </p>
 
-    <div class="callout">
-      <h4>Project thesis</h4>
-      <p>
-        If heat is the binding constraint on manipulator performance, then a manipulator should
-        be designed <em>around</em> heat removal from the outset rather than de-rated around it
-        afterward. SCATA treats thermal management as the primary architectural driver —
-        determining where the motors sit, how the joints are driven, and how the controller
-        shapes torque — instead of as a cooling system bolted onto a finished arm.
-      </p>
-    </div>
-
     <!-- ============ 2 ============ -->
-    <h2>2 — System architecture</h2>
-
-    <p>
-      SCATA is organised around a claim that only holds if all three parts are present: cooling
-      creates thermal headroom, proximal actuation makes that cooling physically practical on a
-      moving arm, and thermally-aware control spends the headroom without destroying the motor.
-      Any one alone is a partial solution.
-    </p>
+    <h2>2 — Three pillars</h2>
 
     <div class="pillars">
       <div class="pillar">
-        <h4>I — Resin-sealed cooling</h4>
-        <p>Cast epoxy seals a coolant path directly against the stator windings, and a pumped loop carries heat to a radiator. Without it there is no headroom to manage and no reason to cluster the motors.</p>
+        <h4>I — Cooling</h4>
+        <p>Cast epoxy seals a coolant path against the stator windings; a pumped loop carries heat to a radiator. Without it there's no headroom to manage.</p>
       </div>
       <div class="pillar">
         <h4>II — Proximal actuation</h4>
-        <p>Every motor mounts to the static base; distal joints are driven through cables over capstans. Cooling a moving arm otherwise means flexing hoses or building rotary fluid unions.</p>
+        <p>Every motor mounts to the static base, distal joints driven by cable. Otherwise cooling a moving arm means flexing hoses or rotary fluid unions.</p>
       </div>
       <div class="pillar">
-        <h4>III — Thermal-aware control</h4>
-        <p>Live winding-temperature estimation feeds a limiter that <em>tapers</em> the torque ceiling instead of cutting it. A hard cutoff wastes the headroom cooling just bought.</p>
+        <h4>III — Thermal control</h4>
+        <p>Live winding-temperature estimation feeds a limiter that <em>tapers</em> the torque ceiling. A hard cutoff wastes the headroom cooling just bought.</p>
       </div>
     </div>
 
     <p>
-      The dependency is genuinely circular, in a productive way. Cooling requires the motors to
-      be reachable by one loop, which is proximal actuation's contribution. Proximal actuation
-      introduces cable transmission, which originally imported a constraint back from the
-      cooling system: polymer tendons creep faster when hot, so anchors had to be routed away
-      from the warm base. Moving to steel cable severed that particular coupling while leaving
-      the productive one intact, since the joint-side encoder installed to measure transmission
-      error also feeds the control loop. <strong>One sensor, two jobs.</strong>
-    </p>
-    <p>
-      Because the motors are static and clustered, the cooling system, drive electronics, and
-      power supply all live in one place. The arm above the base plate becomes passive
-      structure — light, cheap, independently replaceable. This separable "actuator pack plus
-      passive arm" pattern is drawn from surgical-manipulator practice and means the cooling
-      design and the arm design can iterate without blocking each other.
+      The dependency is circular in a productive way. Cooling needs the motors reachable by one
+      loop — that's what proximal actuation provides. Because the motors are static and
+      clustered, cooling, drive electronics, and power all live in one place, and
+      <strong>the arm above the base plate becomes passive structure</strong> — light, cheap,
+      independently replaceable.
     </p>
 
     <!-- ============ 3 ============ -->
-    <h2>3 — Pillar I: resin-sealed liquid cooling</h2>
+    <h2>3 — Pillar I: resin-sealed cooling</h2>
 
     <p>
-      Every liquid-cooled motor solves the same problem: get coolant close to the copper
-      without getting coolant into anything it would destroy. Cast epoxy resin is the enabling
-      material either way — but <strong>its role differs fundamentally between design
-      generations, and confusing the two is the fastest route to a design that
-      underperforms.</strong>
+      Resin does <strong>one of two completely different jobs</strong>, and confusing them is
+      the fastest route to a design that underperforms:
     </p>
-    <p>
-      In a cooling <em>jacket</em>, resin is a thermal conductor. Heat must pass through it to
-      reach the coolant, so resin thickness directly costs performance. In an
-      <em>immersion</em> or "wet stator" design, resin is purely a structural seal — it forms
-      dams and walls that keep liquid where it belongs, while the coolant touches bare copper.
-      Heat never crosses the resin at all, so its thermal conductivity stops mattering.
-    </p>
+
+    <div class="ba">
+      <div class="b1">
+        <h5>In a jacket — thermal conductor</h5>
+        <p>Heat must pass <em>through</em> the resin to reach coolant. Thickness directly costs performance.</p>
+      </div>
+      <div class="b2">
+        <h5>In immersion — structural seal only</h5>
+        <p>Coolant touches bare copper. Heat never crosses resin, so its conductivity stops mattering entirely.</p>
+      </div>
+    </div>
 
     <div class="callout">
       <h4>The number that drives everything</h4>
       <p>
-        Standard casting epoxy conducts heat at roughly <strong>0.2 W/m·K</strong> — about a
-        thousand times worse than aluminium. In a jacket design, a resin wall thicker than
-        about 2 mm in the heat path will dominate the thermal resistance and squander the
-        entire benefit of liquid cooling. This is the single most common reason home-built
-        cooling jackets fail to reproduce published results.
+        Casting epoxy conducts at <strong>~0.2 W/m·K</strong> — about a thousand times worse than
+        aluminium. In a jacket, a resin wall thicker than ~2 mm in the heat path dominates the
+        thermal resistance and squanders the entire benefit. This is the most common reason
+        home-built cooling jackets fail to reproduce published results.
       </p>
     </div>
-
-    <h3>The wet stator, in cross-section</h3>
 
     <figure>
       <svg class="dgm" viewBox="0 0 640 260" role="img" aria-labelledby="wsTitle wsDesc">
         <title id="wsTitle">Wet stator cross-section</title>
         <desc id="wsDesc">Coolant enters through the housing, floods the cavity above the bare copper windings, and exits the opposite side. An epoxy perimeter seal separates the coolant from the rotor air gap. Heat passes straight from copper into liquid without crossing resin.</desc>
 
-        <!-- back housing -->
         <rect class="metal" x="140" y="176" width="360" height="30" rx="2"/>
         <text x="320" y="196" text-anchor="middle">aluminium back housing</text>
 
-        <!-- stator core -->
         <rect class="metal" x="170" y="140" width="300" height="36" rx="2"/>
         <text x="320" y="163" text-anchor="middle">stator core</text>
 
-        <!-- windings -->
         <rect class="copper" x="196" y="112" width="34" height="28" rx="2"/>
         <rect class="copper" x="246" y="112" width="34" height="28" rx="2"/>
         <rect class="copper" x="296" y="112" width="34" height="28" rx="2"/>
         <rect class="copper" x="346" y="112" width="34" height="28" rx="2"/>
         <rect class="copper" x="396" y="112" width="34" height="28" rx="2"/>
 
-        <!-- coolant cavity -->
         <rect class="fluid" x="176" y="86" width="288" height="54"/>
         <text class="hi" x="320" y="104" text-anchor="middle">coolant fills this gap — touches bare copper</text>
 
-        <!-- epoxy perimeter seals -->
         <rect class="epoxy" x="164" y="86" width="14" height="54"/>
         <rect class="epoxy" x="462" y="86" width="14" height="54"/>
         <text x="150" y="34" text-anchor="middle">epoxy seal</text>
         <line class="stroke" x1="152" y1="42" x2="170" y2="84" stroke-dasharray="3 3"/>
 
-        <!-- cover -->
         <rect class="metal" x="164" y="72" width="312" height="16" rx="2"/>
         <text x="320" y="84" text-anchor="middle">coolant cover (SLA-printed lid)</text>
 
-        <!-- rotor, dry -->
         <rect class="metal" x="96" y="72" width="40" height="134" rx="2"/>
         <rect class="metal" x="504" y="72" width="40" height="134" rx="2"/>
         <text x="116" y="140" text-anchor="middle" transform="rotate(-90 116 140)">rotor (dry)</text>
         <text x="524" y="140" text-anchor="middle" transform="rotate(-90 524 140)">rotor (dry)</text>
 
-        <!-- flow arrows -->
-        <path class="fluidln" d="M 200 232 L 200 210 L 200 200" marker-end="url(#ar)"/>
-        <path class="fluidln" d="M 440 200 L 440 210 L 440 232" marker-end="url(#ar)"/>
+        <path class="fluidln" d="M 200 232 L 200 200" marker-end="url(#ar)"/>
+        <path class="fluidln" d="M 440 200 L 440 232" marker-end="url(#ar)"/>
         <text class="hi" x="200" y="248" text-anchor="middle">coolant in</text>
         <text class="hi" x="440" y="248" text-anchor="middle">coolant out</text>
 
-        <!-- heat path callout -->
         <path class="fluidln" d="M 313 112 L 313 100" marker-end="url(#ar)" stroke-dasharray="3 2"/>
         <text class="hi" x="500" y="34" text-anchor="end">heat: copper → liquid, never through resin</text>
         <line class="stroke" x1="330" y1="98" x2="470" y2="40" stroke-dasharray="3 3"/>
 
         <defs>
           <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" style="fill:var(--accent)"/>
+            <path d="M 0 0 L 10 5 L 0 10 z" style="fill:var(--accent)"/>
           </marker>
         </defs>
       </svg>
       <figcaption>
-        <b>Figure 1.</b> Wet stator, side cross-section. Coolant enters through the housing,
-        floods the cavity above the windings, and exits the opposite side. The epoxy seal at the
-        perimeter is the only thing standing between the coolant and the 0.3 mm rotor air gap.
-        Heat never passes through resin — it goes straight from copper into liquid.
+        <b>Figure 1.</b> Wet stator, side cross-section. The epoxy seal at the perimeter is the
+        only thing between the coolant and the 0.3 mm rotor air gap.
       </figcaption>
     </figure>
 
-    <h3>What the strongest published result says</h3>
-    <p>
-      The UCLA immersion study compared five configurations on one stator — bare, plus thermal
-      interface material, plus forced air, plus a liquid jacket, and finally direct immersion —
-      measuring winding-to-ambient thermal resistance for each.
-    </p>
+    <h3>Benchmarks and staging</h3>
 
     <div class="tablewrap">
       <table>
@@ -292,440 +225,219 @@
       </table>
     </div>
 
-    <p>
-      These are the benchmarks SCATA measures itself against, and they set the design
-      trajectory: a jacket is the sensible way to learn the process, but immersion is the
-      destination. Three secondary findings shape the design as much as the headline number:
-    </p>
-    <ul>
-      <li><strong>Flow rate dominates.</strong> Raising flow from 0.5 to 2.8 L/min cut thermal resistance by 43.8% — a larger effect than most geometry changes. Pumps should be sized generously.</li>
-      <li><strong>Phase change is nearly irrelevant here.</strong> Allowing the coolant to boil contributed only 0.023 K/W. Not worth the complexity of a two-phase design.</li>
-      <li><strong>Orientation matters only at low flow.</strong> Below ~1.5 L/min, vapour pockets collect in the wrong places and worsen results by 18%. Above it, the effect disappears — important for an arm whose motors change orientation constantly.</li>
+    <ul class="tight">
+      <li><strong>Flow rate dominates.</strong> 0.5 → 2.8 L/min cut thermal resistance 43.8% — bigger than most geometry changes. Size pumps generously.</li>
+      <li><strong>Phase change is irrelevant here.</strong> Letting coolant boil contributed 0.023 K/W. Not worth a two-phase design.</li>
+      <li><strong>Orientation only matters below ~1.5 L/min</strong>, where vapour pockets worsen results 18%. Above it the effect vanishes — important for an arm whose motors constantly reorient.</li>
+      <li><strong>Once immersed, the next limit was magnetic saturation — not temperature.</strong> Cooling moved the bottleneck out of the thermal domain entirely.</li>
     </ul>
-    <p>
-      Notably, once the stator was immersion-cooled, the next constraint encountered was
-      magnetic saturation of the stator core — <em>not</em> temperature. Cooling moved the
-      bottleneck out of the thermal domain entirely.
-    </p>
-
-    <h3>Three design generations, staged deliberately</h3>
-    <div class="tablewrap">
-      <table>
-        <thead><tr><th>Approach</th><th>Method</th><th>Role</th></tr></thead>
-        <tbody>
-          <tr><td>A — coiled tube in resin</td><td>Soft tube wrapped 4–6 turns around the housing, embedded in a poured mould, both ends as ports</td><td>Lowest-risk way to learn resin handling, mould-making, and leak testing. Weakest thermally.</td></tr>
-          <tr><td>B — cast internal channel</td><td>Sacrificial wax or dissolvable spiral insert, melted out after cure to leave an internal channel</td><td>Closer to published jacket designs; coolant contacts resin walls directly.</td></tr>
-          <tr><td>C — immersion / wet stator</td><td>Resin becomes a seal only; coolant floods a cavity above the winding crowns and touches bare copper</td><td><strong>Target.</strong> The 0.127 K/W result belongs to this generation.</td></tr>
-        </tbody>
-      </table>
-    </div>
 
     <div class="callout">
       <h4>The constraint that splits the project in two</h4>
       <p>
-        Immersion requires a <strong>dielectric fluid</strong> — Novec, or mineral/transformer
-        oil as the budget single-phase option. Water must never touch bare windings under any
-        circumstances. The borrowed PC water-cooling loop can serve Approaches A and B, where
-        coolant is separated from copper by resin and metal. It can never serve Approach C.
-        This is exactly why the roadmap runs A → C rather than straight to C: the jacket
-        generation costs almost nothing in hardware and teaches the resin process, the
-        leak-testing discipline, and the instrumentation before any money goes into dielectric
-        fluid.
+        Immersion requires a <strong>dielectric fluid</strong>. Water must never touch bare
+        windings. The borrowed PC water-cooling loop can serve a jacket, where resin and metal
+        separate coolant from copper — it can never serve immersion. That's why the roadmap runs
+        jacket → immersion: the jacket generation costs almost nothing and teaches the resin
+        process, leak discipline, and instrumentation before any money goes into dielectric fluid.
       </p>
     </div>
 
     <!-- ============ 4 ============ -->
-    <h2>4 — Build work: the hoverboard test article</h2>
+    <h2>4 — Build work</h2>
+
+    <figure>
+      <img src="../assets/img/spin-cure-rig.jpg" alt="A 3D-printed ring mould and stator fixture mounted to a red chuck adapter on a cordless drill, held vertically during an epoxy spin-cure demonstration.">
+      <figcaption>
+        <b>Figure 2.</b> Spin-cure fixture — the printed ring mould on a drill-driven chuck
+        adapter. Spinning the assembly during cure throws liquid epoxy radially outward so it
+        dams at the perimeter instead of pooling over the windings.
+      </figcaption>
+    </figure>
 
     <p>
-      Reading manufacturing recipes is not the same as executing them. Before committing an
-      expensive frameless motor and a $70 kit of thermally-conductive epoxy to a wet-stator
-      build, the process itself needed proving: whether a printed cover can be bonded to a
-      stator watertight, whether epoxy can be injected between winding slots without flooding
-      the cavity, and where the seams actually leak. A hoverboard hub motor — free, already
-      torn down, and expendable — was the right vehicle.
-    </p>
-
-    <h3>An early and consequential finding: motor shape decides everything</h3>
-    <p>
-      The bench motor originally on hand was a pancake <em>outrunner</em>, meaning the outer
-      bell is the rotor and spins. There is no static outer surface to jacket and no way to seal
-      a coolant cavity against a rotating shell. No amount of clever resin work fixes this.
-    </p>
-
-    <div class="callout">
-      <h4>Design rule established</h4>
-      <p>
-        Liquid cooling requires either a <strong>frameless inrunner</strong> (pot the stator
-        directly into the jacket) or a <strong>housed inrunner</strong> (jacket the static
-        housing). Outrunners are structurally incompatible with jacket and immersion cooling
-        alike. The build was redirected to a CubeMars RI50 KV100 frameless inrunner — whose
-        ~0.58 N·m continuous and 1.67 N·m peak were also chosen to sit inside the moteus
-        current limits, so the controller is never the constraint during thermal testing.
-      </p>
-    </div>
-
-    <h3>Parametric cover CAD</h3>
-    <p>
-      The hub motor was disassembled with windings intact and the hall-sensor PCB removed —
-      it is glued and screwed to the stator, and would not survive contact with coolant
-      regardless. Five measurements drive the entire CAD model: outer diameter across the
-      winding and tooth tips, hub OD where the inner ring seals, winding crown height above
-      the lamination face, the mirrored crown height on the underside, and clearance from
-      winding top to the inside face of the rotor bell.
-    </p>
-    <p>
-      The cover was modelled parametrically so that remeasuring changes one number rather than
-      the whole sketch — three driven parameters plus three chosen ones (gap 2.5 mm, wall 3 mm,
-      clearance 0.4 mm). Because this stator has winding crowns on <em>both</em> faces, a flat
-      base plate cannot seal against it: the bottom becomes a mirrored dish and the two halves
-      close like a clamshell, meeting at the stator's mid-height, where a single continuous
-      epoxy seam becomes the only perimeter joint in the assembly.
-    </p>
-
-    <h3>The insight: how coolant actually travels</h3>
-    <p>
-      The most valuable output of this exercise was correcting a misreading of the published
-      process — one that would have produced a working-looking part with no coolant path at all.
+      Before committing an expensive frameless motor and a $70 kit of thermally-conductive
+      epoxy, the process needed proving. A free, expendable hoverboard hub motor became the
+      test article. Its deliverable is <strong>a leak log, not a working motor.</strong>
     </p>
 
     <div class="callout">
-      <h4>Correction, logged</h4>
+      <h4>Correction that saved the build</h4>
       <p>
-        The epoxy does <strong>not</strong> fill the winding crevices to the brim. Spin-curing
-        throws liquid epoxy radially outward. It dams against the ring mould and fills only the
-        slot openings at the tooth tips. The interior — end-turns, the gaps between coils —
+        I had misread the published process. <strong>The epoxy does not fill the winding
+        crevices to the brim.</strong> Spin-curing throws it radially outward, where it dams
+        against the ring mould and fills only the slot openings at the tooth tips. The interior
         drains clear and stays hollow.
       </p>
       <p>
-        <strong>That hollow space is the coolant channel.</strong> Fluid enters through a
-        housing hole, floods the open cavity over bare copper, splits into two circumferential
-        streams, and converges at an outlet 180° away. The perimeter epoxy dam is what stops
-        coolant escaping radially through the slots into the 0.3 mm rotor air gap. The cover
-        ports open into this cavity and never touch solid resin.
+        <strong>That hollow space is the coolant channel.</strong> Getting this wrong produces a
+        working-looking part with no coolant path at all.
       </p>
     </div>
-
-    <h3>The spin-safe design rule</h3>
-    <p>
-      Working through the clamshell geometry surfaced a constraint that does not appear in the
-      source paper, because the paper's motor did not have the problem. The bottom-dish rim
-      sits outside the tooth tips. On a test article whose rotor is never reinstalled, that is
-      harmless. On a motor that must spin, it is fatal — the rim occupies the volume the rotor
-      bell needs, and the 0.3 mm air gap leaves no room to negotiate.
-    </p>
 
     <div class="callout">
-      <h4>Spin-safe rule</h4>
+      <h4>Two design rules I derived</h4>
       <p>
-        If a rotor bell must turn: <strong>no printed structure past the tooth-tip
-        radius</strong>. The perimeter seal must be mould-formed epoxy flush with the teeth,
-        and printed covers may occupy the axial faces only. The axial gap above the winding
-        crowns becomes the entire flow channel, and it should stay small — a larger gap means
-        slower local flow over the copper and worse cooling.
+        <strong>Outrunners cannot be cooled.</strong> The outer bell spins, so there's no static
+        surface to jacket and no way to seal against it. Redirected the build to a frameless
+        inrunner (CubeMars RI50 KV100), sized inside the moteus current limits so the controller
+        is never the constraint during thermal testing.
+      </p>
+      <p>
+        <strong>Spin-safe rule: no printed structure past the tooth-tip radius</strong> on any
+        motor whose bell must turn. The seal must be mould-formed epoxy flush with the teeth;
+        printed covers occupy the axial faces only. The 0.3 mm air gap leaves no room to
+        negotiate — and the hoverboard piece taught this at zero cost.
       </p>
     </div>
-
-    <p>
-      This constraint is precisely why the frameless inrunner is the real build rather than an
-      adapted hub motor: its stator outer diameter faces outward with no rotor in that space,
-      so the perimeter is free for whatever seal geometry the design needs.
-      <strong>The hoverboard piece taught the lesson at zero cost.</strong>
-    </p>
-
-    <h3>The epoxy workflow test</h3>
-    <p>
-      The test article's actual deliverable is a <em>leak log</em>, not a working motor. Dry-fit
-      the cover and sand until it seats flat; butter the skirt edges, press on, fillet the outer
-      and inner seams, and pot the wire exit at the hub; while curing, inject epoxy between
-      several winding slots through the port holes as a direct rehearsal of the published step;
-      cure fully, plug one port, fill with dyed water through the other, and leave it 24 hours
-      over paper towels. No pump required — a static fill finds every bad seam, and the
-      resulting list of failure locations is what informs the real build.
-    </p>
-    <p>
-      Print settings for watertight FDM: PETG or ABS, 4–6 perimeters, 6 top and bottom layers,
-      40%+ infill, slight over-extrusion at 102–105%, printed lid-face down so the flattest and
-      densest face becomes the sealing surface.
-    </p>
 
     <!-- ============ 5 ============ -->
-    <h2>5 — Pillar II: proximal actuation and transmission</h2>
+    <h2>5 — Pillar II: proximal actuation</h2>
+
+    <figure>
+      <img src="../assets/img/joint-linkage.jpg" alt="A black 3D-printed truss linkage held in both hands and articulated, with machined screw pivots visible at four joints and drive cable routed through them.">
+      <figcaption>
+        <b>Figure 3.</b> The rolling-joint linkage, articulating. Braced truss frame printed
+        in-house; every pivot is a screw joint with a bearing seated inside it, and the drive
+        cable is routed <em>through</em> those bearings rather than around them.
+      </figcaption>
+    </figure>
 
     <p>
-      Proximal actuation places all motors at the base and drives distal joints through cables.
-      The moving segments become passive structure; the heavy, hot components never move.
-      Motors clustered at the base means <strong>one short coolant loop serves
-      everything</strong> — no tubing runs down a moving arm, no rotary fluid unions at the
-      joints, no hose repeatedly flexed to failure. That is the reason most liquid-cooled
-      robots are legs rather than arms.
+      Motors at the base means <strong>one short coolant loop serves everything</strong> — no
+      tubing down a moving arm, no rotary unions, no hose flexed to failure. That is why most
+      liquid-cooled robots are legs rather than arms.
     </p>
 
-    <h3>The rolling-joint linkage</h3>
-    <p>
-      The working linkage is printed in-house as a braced, truss-like frame rather than solid
-      blocks, keeping distal mass down. Every articulation point is a screw joint with a bearing
-      seated inside it: a machined fastener forms the axle, the rolling element carries the
-      rotation, and the flat drive cable is routed <em>through</em> those same bearings.
-    </p>
-    <p>
-      The default way to build a printed joint is a printed hole on a printed pin. Both slide
-      plastic on plastic, and both fail predictably: friction is high and inconsistent because
-      layer lines are not a bearing surface, the contact wears, and the wear turns directly into
-      backlash. For a cable-driven arm this is doubly costly, since friction at the joint is
-      indistinguishable — from the motor's point of view — from load.
-    </p>
-    <p>
-      Routing the cable through the bearing rather than past it does two distinct jobs at once.
-      <strong>Friction:</strong> a cable changing direction over a fixed post drags across it,
-      losing tension and abrading itself; over a rolling element it rolls instead of sliding.
-      <strong>Decoupling:</strong> a cable passing through a joint's rotation axis does not
-      change effective length when that joint moves, so rotating one joint does not pull on the
-      tendon serving the next one. Route it off-axis and every proximal joint's motion writes
-      itself into every distal joint's position — the kinematics stop being separable and every
-      calibration becomes conditional on every other joint's pose.
-    </p>
+    <h3>Why bearings inside the pivots</h3>
+    <ul class="tight">
+      <li><strong>The default printed joint slides plastic on plastic.</strong> Layer lines are not a bearing surface: friction is high and inconsistent, the contact wears, and wear becomes backlash.</li>
+      <li><strong>For a cable-driven arm that's doubly costly</strong> — from the motor's point of view, joint friction is indistinguishable from load.</li>
+      <li><strong>Cable through the bearing, not past it.</strong> A cable changing direction over a fixed post drags and abrades; over a rolling element it rolls. Tension entering the joint largely survives it.</li>
+      <li><strong>On-axis routing decouples the joints.</strong> A cable through the rotation axis doesn't change effective length when that joint moves. Route it off-axis and every proximal joint writes itself into every distal joint's position — the kinematics stop being separable.</li>
+    </ul>
 
-    <h3>The transmission material decision</h3>
+    <h3>Transmission material: UHMWPE → steel</h3>
     <p>
-      Cable transmission's classic weakness is that polymer tendons stretch permanently.
-      Quantifying that risk drove the material choice. A study of Dyneema DM20 under cyclic
-      loading — bedded in first, then cycled between 70 N and 2000 N for 500 cycles — found the
-      rope elongated <strong>more than 9%, and was still creeping when the test ended</strong>.
-      DM20 is the low-creep grade.
+      Published cyclic testing found Dyneema DM20 — the <em>low-creep</em> grade — elongated
+      <strong>over 9% across 500 load cycles and was still creeping</strong> when the test ended.
+      A tendon whose length is a slow function of load history corrupts position kinematics
+      permanently, not transiently.
     </p>
-    <p>
-      Three distinct mechanisms are at work in a polymer tendon and must not be conflated.
-      Construction stretch is largest and fastest, and mostly permanent. Primary creep is
-      viscoelastic settling under sustained tension — the one that makes "it was fine yesterday"
-      untrue. Steady-state creep is the irreducible slow flow of the polymer, which never stops.
-      Only the first is removable by preparation.
-    </p>
-
-    <div class="callout">
-      <h4>Decision adopted: steel wire rope</h4>
-      <p>
-        The transmission element was changed from UHMWPE to steel wire rope. Steel does not
-        creep at room temperature under working loads. This does not <em>manage</em> the failure
-        mode, mitigate it, or trigger maintenance against it — <strong>it removes it</strong>.
-        The drift mechanism that would corrupt position kinematics over weeks of loaded holding
-        simply does not exist in a metallic tendon at these temperatures.
-      </p>
-    </div>
 
     <div class="tablewrap">
       <table>
-        <thead><tr><th>Property</th><th>UHMWPE (Dyneema)</th><th>Steel wire rope</th><th>Net for SCATA</th></tr></thead>
+        <thead><tr><th>Property</th><th>UHMWPE</th><th>Steel wire rope</th><th>Net</th></tr></thead>
         <tbody>
-          <tr><td>Viscoelastic creep</td><td>Continuous; load- and temperature-dependent</td><td>None at working temperature</td><td><span class="yes">Decisive advantage</span></td></tr>
-          <tr><td>Construction stretch</td><td>Several % — bedding-in mandatory</td><td>Under ~1% — still useful</td><td><span class="yes">Advantage</span></td></tr>
-          <tr><td>Temperature sensitivity</td><td>Weakens above ~70 °C; melts ~130–144 °C</td><td>Indifferent across this range</td><td>Removes a routing constraint</td></tr>
-          <tr><td>Termination reliability</td><td>Slippery; needs splice or whipping</td><td>Swage or set-screw; holds or fails visibly</td><td>Removes a test confounder</td></tr>
+          <tr><td>Viscoelastic creep</td><td>Continuous</td><td>None at working temp</td><td><span class="yes">Decisive</span></td></tr>
+          <tr><td>Temperature sensitivity</td><td>Weakens above ~70 °C</td><td>Indifferent</td><td>Frees tendon routing near the warm base</td></tr>
+          <tr><td>Termination</td><td>Slippery; needs splice</td><td>Swage — holds or fails visibly</td><td>Removes a test confounder</td></tr>
           <tr><td>Axial stiffness</td><td>Lower</td><td>Higher</td><td>Better position fidelity</td></tr>
-          <tr><td>Tight-radius bending</td><td>Tolerant</td><td>Fatigue-limited; needs D/d ≥ 15–20</td><td><span class="no">The new constraint</span></td></tr>
+          <tr><td>Tight-radius bending</td><td>Tolerant</td><td>Fatigue-limited, D/d ≥ 15–20</td><td><span class="no">The new constraint</span></td></tr>
         </tbody>
       </table>
     </div>
 
     <p>
-      The trade is real and should be stated plainly: <strong>the creep problem has been
-      exchanged for a fatigue-life problem.</strong> Bending steel rope repeatedly around a
-      small radius accumulates fatigue in the individual wires until strands begin to break. The
-      governing parameter is the ratio of wrap diameter to cable diameter. This interacts
-      directly with the compact bearing pivots — a cable wrapping a 10 mm rolling surface gives
-      D/d = 10 at 1 mm cable (marginal) and D/d = 20 at 0.5 mm cable (comfortable). Either
-      specify fine cable or increase the wrap diameter at every direction change, and make that
-      choice deliberately before the joints are finalised, because retrofitting a larger wrap
-      radius into a printed assembly is a redesign, not an adjustment.
-    </p>
-    <p>
-      That is also a <em>better</em> failure mode than creep: steel cable announces fatigue
-      through visible broken wires and surface distress before it parts. It is inspectable,
-      whereas creep is silent until the kinematics are already wrong.
+      Switching to steel doesn't <em>manage</em> creep — <strong>it removes the mechanism
+      entirely.</strong> The honest cost: creep has been exchanged for a bend-fatigue problem.
+      A 10 mm rolling surface gives D/d = 10 at 1 mm cable (marginal) and 20 at 0.5 mm
+      (comfortable). But fatigue is the <em>better</em> failure mode — steel announces it with
+      visible broken wires, whereas creep is silent until the kinematics are already wrong.
     </p>
 
     <!-- ============ 6 ============ -->
     <h2>6 — Pillar III: thermal-aware control</h2>
 
     <p>
-      The default protection scheme is a hard cutoff: kill current above 90 °C. It protects the
-      motor and wastes the entire point of the cooling system. A cooled actuator that trips is
-      no more useful than an uncooled one that trips — it just takes longer to get there.
-    </p>
-    <p>
-      The alternative is <strong>soft thermal limiting</strong>: taper the torque ceiling across
-      a warning band so the arm keeps moving at reduced effort and settles into a safe steady
-      state, rather than stopping dead. A scaling factor multiplies the commanded current,
-      clamped to [0, 1]:
+      The default protection is a hard cutoff at 90 °C. It protects the motor and wastes the
+      entire point of cooling — <strong>a cooled actuator that trips is no more useful than an
+      uncooled one that trips.</strong> Soft limiting tapers the ceiling instead:
     </p>
 
     <div class="eq">
       k(T) = (T<sub>max</sub> − T) / (T<sub>max</sub> − T<sub>warn</sub>)
-      <small>Below T<sub>warn</sub>, k = 1 and nothing is limited. At T<sub>max</sub>, k = 0. Between, the ceiling falls linearly and the system finds the equilibrium where heat generated equals heat removed. A hard latch remains as a backstop.</small>
+      <small>The system settles at the equilibrium where heat generated equals heat removed. A hard latch stays as a backstop. <strong>Band edges are placeholders until the A/B test produces real values.</strong></small>
     </div>
 
-    <div class="callout plain">
-      <h4>Honest caveat</h4>
+    <h3>Two temperature estimates, and why disagreement is the feature</h3>
+    <p>
+      Once a stator is potted, the thermistor can't be moved — and it reads housing temperature,
+      which lags the windings by tens of degrees during transients. So two estimates run in
+      parallel: <strong>copper resistance</strong> (rises ~0.4%/°C; measures the copper itself)
+      as primary, and a <strong>model fed by current, speed, and coolant ΔT</strong> as
+      cross-check.
+    </p>
+
+    <div class="callout">
+      <h4>A safety signal falls out for free</h4>
       <p>
-        The 80 °C and 90 °C band edges currently in the design are <strong>placeholders</strong>.
-        They are not derived from measurement and will be set from the cooled steady-state data
-        produced by the A/B thermal test. Publishing them as though they were tuned would
-        misrepresent the maturity of this pillar.
+        If the two estimates diverge beyond threshold, that is itself a fault — and the most
+        likely cause is exactly what the system most needs to catch: <strong>the pump has died
+        or the loop air-locked</strong>, so coolant ΔT collapses toward zero while the windings
+        keep heating.
       </p>
     </div>
 
-    <h3>Two independent temperature estimates</h3>
-    <p>
-      The limiter is only as trustworthy as its temperature input, and the input is genuinely
-      hard to obtain. Once a stator is potted in resin, the thermistor cannot be moved — and it
-      reads housing temperature, which lags winding temperature by tens of degrees during
-      transients. The windings can be cooking while the sensor reads comfortable.
-    </p>
-
     <div class="tablewrap">
       <table>
-        <thead><tr><th>Method</th><th>Principle</th><th>Role</th></tr></thead>
+        <thead><tr><th>Controller</th><th>Job</th><th>Rate</th><th>Why split</th></tr></thead>
         <tbody>
-          <tr><td>Resistance</td><td>Copper resistance rises ≈0.4%/°C; the motor controller reports winding resistance directly</td><td><strong>Primary.</strong> Measures the copper itself, not something near it. Costs nothing to add.</td></tr>
-          <tr><td>Model / learned</td><td>Estimate from current, speed, and coolant ΔT — models fed only by signals the drive already measures track a thermistor reference closely enough to drive a control limit</td><td>Cross-check. Fallback when the resistance signal is noisy or the model drifts.</td></tr>
+          <tr><td>moteus r4.11</td><td>Motor drive + winding thermal protection</td><td>~40 kHz</td><td>Built-in derate and fault logic — needs zero custom code and can't be broken by a host crash</td></tr>
+          <tr><td>ESP32</td><td>Coolant supervision, pump, logging</td><td>1 Hz</td><td>Catches the one thing moteus can't see: <strong>loss of flow is instant, the temperature rise it causes is not</strong></td></tr>
         </tbody>
       </table>
     </div>
-
-    <p>
-      The valuable property is not redundancy but <strong>disagreement</strong>. If the two
-      estimates diverge beyond threshold, that is itself a fault signal — and the most likely
-      cause is precisely the failure the system most needs to catch: the pump has died or the
-      loop has air-locked, so coolant ΔT collapses toward zero while the windings keep heating.
-      A safety signal falls out of an accuracy mechanism for free.
-    </p>
-
-    <h3>Splitting protection across two processors</h3>
-    <div class="tablewrap">
-      <table>
-        <thead><tr><th>Controller</th><th>Responsibility</th><th>Rate</th><th>Rationale</th></tr></thead>
-        <tbody>
-          <tr><td>moteus r4.11</td><td>Motor drive and winding thermal protection</td><td>~40 kHz FOC / control rate</td><td>Dedicated motor-thermistor input with built-in derate and fault logic. The safety loop needs zero custom code and cannot be broken by a crash elsewhere.</td></tr>
-          <tr><td>ESP32</td><td>Coolant supervision and data logging</td><td>1 Hz</td><td>Reads inlet/outlet temperatures and the flow switch, drives the pump, writes CSV. Thermal time constants are tens of seconds; sampling faster buys nothing.</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <p>
-      The division matters more than it first appears. Winding protection lives entirely on the
-      motor controller, so the pump, the ESP32, and the logging can all fail without the motor
-      cooking. The ESP32 adds the one thing the motor controller cannot see:
-      <strong>loss of flow, which is instantaneous, whereas the temperature rise it causes is
-      not.</strong> If the flow switch reads no flow for more than five seconds, the system
-      alerts and can command a stop over CAN — covering the failure where a pump dies during a
-      high-current hold.
-    </p>
 
     <!-- ============ 7 ============ -->
-    <h2>7 — Validation methodology</h2>
+    <h2>7 — Validation and roadmap</h2>
 
-    <p>
-      Six tests, in order. The first one is the gate; nothing downstream means anything
-      without it.
-    </p>
+    <p>Six tests, in order. The first gates everything downstream.</p>
 
-    <ol>
-      <li><strong>A/B thermal test — primary evidence.</strong> Same motor, same current, cooling off versus on. The uncooled curve should climb steeply; the cooled curve should flatten. If the cooled curve never flattens, heat removal is less than heat input at that current — which is a <em>result</em>, not a failure of the test.</li>
-      <li><strong>Heat-balance check.</strong> Q = ṁ·c<sub>p</sub>·(T<sub>out</sub> − T<sub>in</sub>) compared against electrical input I²R. If coolant-side heat is far below electrical input at steady state, either heat is escaping to air or the instrumentation is wrong.</li>
-      <li><strong>Thermal resistance.</strong> R<sub>th</sub> = (T<sub>winding</sub> − T<sub>coolant,in</sub>) / Q. One number in °C/W per design — how the published work compares designs, and how SCATA measures itself against the 0.473 and 0.127 K/W benchmarks.</li>
-      <li><strong>Flow-rate sweep.</strong> Same current at three flow rates. R<sub>th</sub> should fall then plateau. If flow rate changes nothing, the bottleneck is the resin-to-stator interface, not the coolant — a diagnostic distinguishing a plumbing problem from a materials problem.</li>
-      <li><strong>Endurance and leak validation.</strong> 24-hour loop run before any electronics are connected. Weigh the filled loop before and after a week. After ten heat/cool cycles, inspect the resin for cracks and repeat the leak test — thermal expansion mismatch shows up here, not on day one.</li>
-      <li><strong>Torque validation — the payoff test.</strong> A fixed load held until the temperature limit, cooled versus uncooled. This is the number that matters for a manipulator.</li>
-    </ol>
+    <ul class="tight">
+      <li><strong>A/B thermal test.</strong> Same motor, same current, cooling off vs. on. If the cooled curve never flattens, heat removal is below heat input — that's a result, not a failed test.</li>
+      <li><strong>Heat balance.</strong> Q = ṁ·c<sub>p</sub>·ΔT against electrical I²R. A large gap means heat is escaping to air or the instrumentation is wrong.</li>
+      <li><strong>Thermal resistance.</strong> One number in °C/W per design — how the published work compares designs, and how SCATA measures against 0.473 / 0.127 K/W.</li>
+      <li><strong>Flow sweep.</strong> If flow rate changes nothing, the bottleneck is the resin-to-stator interface, not the coolant. Distinguishes a plumbing problem from a materials problem.</li>
+      <li><strong>Endurance and leak.</strong> 24 hours before electronics; re-test after ten heat/cool cycles, where expansion mismatch shows up.</li>
+      <li><strong>Torque hold time</strong>, cooled vs. uncooled. The number that actually matters for a manipulator.</li>
+    </ul>
 
     <div class="callout">
       <h4>Sensor resolution trap</h4>
       <p>
-        A 100 W heat load at 2 L/min raises coolant temperature by only about <strong>0.7 °C</strong>.
-        DS18B20 sensors are borderline for resolving this; a thermistor with a good ADC is
-        better. It is entirely possible to build a working cooling system and be unable to
-        measure that it works.
+        A 100 W load at 2 L/min raises coolant temperature by only <strong>~0.7 °C</strong>.
+        DS18B20s are borderline. It is entirely possible to build a working cooling system and
+        be unable to measure that it works.
       </p>
     </div>
 
-    <h3>Success criteria</h3>
-    <p>
-      Published results indicate liquid cooling roughly doubles continuous current —
-      approximately 4× continuous heat dissipation. Concretely: <strong>if cooled steady-state
-      winding temperature at the previous limit current drops by 30–50 °C, the jacket is
-      working.</strong> The stretch target is the published jacket benchmark of 0.473 K/W, with
-      immersion at 0.127 K/W as the generation-three goal.
-    </p>
-
-    <!-- ============ 8 ============ -->
-    <h2>8 — Roadmap and current status</h2>
-
-    <p>
-      The <strong>instrumented baseline test</strong> — motor, controller, and one thermistor,
-      no jacket and no arm — produces a single uncooled temperature-versus-time curve. That one
-      CSV is simultaneously the control data for the cooling A/B comparison and the calibration
-      data for the control system's temperature estimator. Until it exists, the cooling result
-      has nothing to be compared against and the soft-limiting band has no basis in measurement.
-      It requires the cheapest hardware in the project and unblocks the most work, so everything
-      else is deliberately sequenced behind it.
-    </p>
-
     <div class="tablewrap">
       <table>
-        <thead><tr><th>ID</th><th>Milestone</th><th>Deliverable</th><th>Status</th></tr></thead>
+        <thead><tr><th>ID</th><th>Milestone</th><th>Status</th></tr></thead>
         <tbody>
-          <tr><td>M1</td><td>Instrumented bench motor</td><td>One CSV: uncooled winding temperature vs. time, with controller-reported resistance logged alongside a thermistor to check whether the two agree</td><td><span class="pill wip">Gate</span></td></tr>
-          <tr><td>M2</td><td>Resin jacket v1 + leak-validated loop</td><td>Cooled A/B curves against the M1 baseline; computed R<sub>th</sub>. 24-hour leak test before electronics.</td><td><span class="pill">Not started</span></td></tr>
-          <tr><td>M3</td><td>Soft thermal limiter</td><td>Sustained overload tapers rather than trips; band values set from M2 data</td><td><span class="pill">Not started</span></td></tr>
-          <tr><td>M4</td><td>Single tendon-driven joint</td><td>Motor-side vs. joint-side angle spread, measured friction budget, first wrap-wear inspection</td><td><span class="pill">Not started</span></td></tr>
-          <tr><td>M5</td><td>Integrated joint</td><td>One joint that is proximally actuated, liquid-cooled, and thermally soft-limited simultaneously</td><td><span class="pill">Not started</span></td></tr>
-          <tr><td>M6</td><td>SCATA arm v1, multi-DOF</td><td>4–5 DOF on one coolant loop and one thermal-aware controller</td><td><span class="pill">Not started</span></td></tr>
+          <tr><td>M1</td><td>Instrumented bench motor — one uncooled temperature-vs-time CSV</td><td><span class="pill wip">Gate</span></td></tr>
+          <tr><td>M2</td><td>Resin jacket v1 + leak-validated loop → cooled A/B curves, R<sub>th</sub></td><td><span class="pill">Not started</span></td></tr>
+          <tr><td>M3</td><td>Soft thermal limiter, band values set from M2 data</td><td><span class="pill">Not started</span></td></tr>
+          <tr><td>M4</td><td>Single tendon-driven joint — backlash, friction budget, wrap wear</td><td><span class="pill">Not started</span></td></tr>
+          <tr><td>M5</td><td>One joint that is cooled, proximally actuated, and soft-limited at once</td><td><span class="pill">Not started</span></td></tr>
+          <tr><td>M6</td><td>SCATA arm v1 — 4–5 DOF on one loop, one controller</td><td><span class="pill">Not started</span></td></tr>
         </tbody>
       </table>
     </div>
 
     <p>
-      The parallelism is deliberate: M4 needs no jacket, so the mechanical thread and the
-      thermal thread do not block each other until integration. A stall in one does not idle the
-      other — the same separability the actuator-pack architecture provides physically, applied
-      to the schedule.
+      M1 requires the cheapest hardware in the project and unblocks the most work, so everything
+      is sequenced behind it. M4 needs no jacket, so the mechanical and thermal threads don't
+      block each other until integration — <strong>a stall in one doesn't idle the other.</strong>
     </p>
 
-    <h3>Work completed to date</h3>
-    <div class="tablewrap">
-      <table>
-        <thead><tr><th>Area</th><th>Completed</th></tr></thead>
-        <tbody>
-          <tr><td>Research</td><td>18 sources reviewed across cooling, control, and transmission. Benchmarks extracted; tendon creep quantified, which drove the material change to steel wire rope.</td></tr>
-          <tr><td>Cooling design</td><td>Three-generation design path with full bill of materials, sourcing, and the dielectric-fluid constraint identified. Electronics architecture and controller thermal configuration specified.</td></tr>
-          <tr><td>Hands-on</td><td>Hub motor torn down; measurement plan and parametric clamshell CAD complete; spin-safe design rule derived; epoxy workflow test defined; pump wiring verified on the bench.</td></tr>
-          <tr><td>Mechanical</td><td>Two-motor base layout with capstan drive and on-axis PTFE cable routing; rolling-joint linkage built and articulating; joint-side encoder stack specified.</td></tr>
-          <tr><td>Control</td><td>Soft-limiting loop and dual-estimator fault logic designed; loop-rate budget allocated across three processors.</td></tr>
-          <tr><td>Decisions</td><td>Outrunner topology ruled out for cooling; frameless inrunner selected; soft limiting chosen over hard cutoff; steel wire rope adopted; jacket-before-immersion staging adopted.</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <h3>Open research items</h3>
-    <ul>
-      <li><strong>Wrap-diameter audit.</strong> Measure D/d at every bearing the steel cable passes over and confirm it clears the fatigue guideline. Highest priority, because it constrains joint geometry.</li>
-      <li><strong>Current-limit update latency over CAN</strong> — determines how fast the soft-limiter host loop must run. Unresolved.</li>
-      <li><strong>Friction budget.</strong> Input tension against output torque across the joint's range. Friction has been named as a cost of proximal actuation throughout this project but never quantified.</li>
-      <li><strong>Cable fatigue life.</strong> A cycle-count-to-first-wire-break figure for the actual cable and wrap radius, which sets the inspection interval.</li>
+    <h3>Top open items</h3>
+    <ul class="tight">
+      <li><strong>Wrap-diameter audit</strong> — measure D/d at every bearing the steel cable crosses. Highest priority, because it constrains joint geometry and retrofitting a larger radius into a printed assembly is a redesign, not an adjustment.</li>
+      <li><strong>Friction budget</strong> — input tension vs. output torque. Named as a cost of proximal actuation throughout, never yet quantified.</li>
+      <li><strong>Current-limit update latency over CAN</strong> — sets how fast the soft-limiter host loop must run.</li>
     </ul>
-
-    <div class="callout plain">
-      <h4>Risk register — top three</h4>
-      <p>
-        <strong>1. Resin acting as insulator.</strong> A thick wall in the heat path negates the
-        design. Keep under 2 mm or use filled epoxy.
-        <strong>2. Pump failure = silent motor death.</strong> Flow is lost instantly;
-        temperature rise is not. A ~$3 inline flow switch triggering a current cut is the
-        cheapest insurance in the build.
-        <strong>3. Trusting one good run.</strong> Thermal problems are slow. Validate at steady
-        state — temperatures flat for 10+ minutes — not after two minutes of looking fine.
-      </p>
-    </div>
 
     <nav class="artnav">
       <a href="baja-daq.html">← Baja DAQ</a>

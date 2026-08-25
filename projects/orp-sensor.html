@@ -6,8 +6,8 @@
 <title>ORP Sensor System — Angelo Reyes</title>
 <meta name="description" content="A galvanic cell built as a salinity sensor — hand-cast agar salt bridge, Arduino differential voltmeter, and an I²C LCD reading redox potential from 0 to 5000 ppm.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
-<link rel="stylesheet" href="../assets/css/site.css">
-<script src="../assets/js/site.js"></script>
+<link rel="stylesheet" href="../assets/css/site.css?v=2">
+<script src="../assets/js/site.js?v=2"></script>
 <style>
   .dgm { width: 100%; height: auto; }
   .dgm .glass   { fill: var(--bg-sunken); stroke: var(--ink-dim); stroke-width: 1.4; }
@@ -64,27 +64,22 @@
 <article class="article">
   <div class="wrap">
 
+    <dl class="glance">
+      <div><dt>Problem</dt><dd>Measure water salinity without buying a commercial ORP probe</dd></div>
+      <div><dt>Built</dt><dd>The galvanic cell itself — electrodes, hand-cast agar salt bridge, Arduino voltmeter, I²C display</dd></div>
+      <div><dt>Range</dt><dd><b>0–5000 ppm</b>, calibrated against solutions of known concentration</dd></div>
+      <div><dt>Key idea</dt><dd>A cell needs <b>two</b> loops — electrons through the wire, ions through the bridge. Break either and it stalls.</dd></div>
+    </dl>
+
     <p>
-      Oxidation-reduction potential is a single voltage that summarises how strongly a solution
-      wants to give up or accept electrons. It is a useful proxy for water quality because
-      dissolved ions change how readily charge moves between two electrodes placed in that
-      water — so a millivolt reading maps back onto ionic concentration.
-    </p>
-    <p>
-      Rather than buy an ORP probe, I built the cell itself. That meant the measurement problem
-      and the electrochemistry problem had to be solved together: <strong>the cell generates a
-      voltage, but only if the ions have a return path — and the return path is the part most
-      people forget.</strong>
+      Oxidation-reduction potential summarises how strongly a solution wants to give up or
+      accept electrons. Dissolved ions change how readily charge moves between two electrodes,
+      so a millivolt reading maps back onto concentration. Building the cell rather than buying
+      a probe meant solving the measurement problem and the electrochemistry problem together.
     </p>
 
     <!-- ===== the cell ===== -->
     <h2>The galvanic cell</h2>
-
-    <p>
-      A galvanic cell is two half-reactions kept physically apart and connected by two separate
-      routes. Electrons take the external wire; ions take the salt bridge. Break either one and
-      the cell stops within moments.
-    </p>
 
     <figure>
       <svg class="dgm" viewBox="0 0 660 412" role="img" aria-labelledby="cellTitle cellDesc">
@@ -165,28 +160,20 @@
     <div class="callout">
       <h4>Why a salt bridge and not just a wire</h4>
       <p>
-        A wire moves electrons; it cannot move ions. As the anode oxidises it pumps positive
-        metal ions into its own solution, and the cathode strips positive ions out of its
-        solution. Without an ionic return path, each compartment accumulates net charge and the
-        potential difference driving the reaction collapses. The bridge lets a counter-current
-        of ions cancel that accumulation — <strong>it does not carry the signal, it removes the
-        reason the signal would stop.</strong>
+        A wire moves electrons; it cannot move ions. The anode pumps positive ions into its
+        solution while the cathode strips them out of the other. Without an ionic return path,
+        each compartment accumulates net charge and the driving potential collapses.
+        <strong>The bridge doesn't carry the signal — it removes the reason the signal would
+        stop.</strong>
       </p>
     </div>
 
     <h3>Casting the bridge</h3>
-    <p>
-      The bridge is agar gel saturated with a neutral salt, cast into a U-shape and set solid.
-      Agar was the right choice for three reasons: it is porous enough for ions to migrate
-      through, it is stiff enough to hold its shape spanning two open beakers without a housing,
-      and it stops the two solutions from bulk-mixing — which would short the cell chemically
-      and destroy the measurement even while the meter kept reading something plausible.
-    </p>
-    <p>
-      The salt has to be chosen so that neither of its ions participates in either half-reaction.
-      A bridge whose ions react is not a bridge; it is a third electrode contaminating both
-      compartments.
-    </p>
+    <ul class="tight">
+      <li><strong>Agar gel saturated with a neutral salt</strong>, cast into a U and set solid. Porous enough for ions to migrate, stiff enough to span two open beakers unsupported.</li>
+      <li><strong>It also stops bulk mixing</strong> — which would short the cell chemically and destroy the measurement while the meter kept reading something plausible.</li>
+      <li><strong>Neither of the salt's ions may participate in either half-reaction.</strong> A bridge whose ions react isn't a bridge; it's a third electrode contaminating both compartments.</li>
+    </ul>
 
     <!-- ===== instrumentation ===== -->
     <h2>Reading it</h2>
@@ -202,18 +189,11 @@
     </figure>
 
     <h3>Why I²C for the display</h3>
-    <p>
-      A bare HD44780 character LCD wants six to eleven GPIO pins in parallel mode. On an Uno with
-      only six analog inputs and fourteen digital pins — several of which the probe circuit and
-      serial debugging already wanted — that is an unaffordable amount of the board spent on an
-      output device.
-    </p>
-    <p>
-      The I²C backpack collapses that to two shared bus lines plus power and ground. SDA carries
-      data, SCL carries the clock, and the address is set on the backpack itself, so the display
-      costs two pins that other I²C devices can also sit on. Everything freed up goes back to the
-      measurement side, which is the part that actually needs the board.
-    </p>
+    <ul class="tight">
+      <li><strong>A bare HD44780 wants 6–11 GPIO pins</strong> in parallel mode — an unaffordable share of a 14-pin board, especially with the probe circuit and serial debugging already competing for them.</li>
+      <li><strong>The I²C backpack collapses that to two shared lines</strong> plus power and ground, with the address set on the backpack. Other I²C devices can sit on the same two pins.</li>
+      <li><strong>Everything freed up goes back to the measurement side</strong>, which is the part that actually needs the board.</li>
+    </ul>
 
     <figure>
       <svg class="dgm" viewBox="0 0 620 250" role="img" aria-labelledby="wireTitle wireDesc">
@@ -280,32 +260,23 @@
 
     <h3>From millivolts to ppm</h3>
     <p>
-      The Arduino's 10-bit ADC resolves the full input span into 1024 steps. The raw count is
-      converted to a potential, and that potential is mapped onto concentration against a
-      calibration curve built by measuring solutions of known salinity across the working range:
+      The 10-bit ADC resolves the input span into 1024 steps. Raw count converts to a potential,
+      which maps onto concentration against a calibration curve anchored at known salinities
+      across <strong>0–5000 ppm</strong>. Two limits worth stating plainly:
     </p>
 
-    <div class="eq">
-      0 – 5000 ppm
-      <small>Working range. Calibration points at known concentrations anchor the curve; readings between them are interpolated.</small>
-    </div>
-
-    <p>
-      Two things constrain accuracy here and both are worth stating plainly rather than hiding.
-      Cell potential is temperature-dependent, so a reading taken in a cold room and a reading
-      taken in a warm one are not directly comparable without compensation. And electrode surfaces
-      change over time as they oxidise and foul, which walks the calibration slowly out of true —
-      the reason commercial probes specify a recalibration interval rather than promising
-      indefinite accuracy.
-    </p>
+    <ul class="tight">
+      <li><strong>Temperature.</strong> Cell potential shifts with it, so readings from a cold room and a warm one aren't comparable without compensation.</li>
+      <li><strong>Electrode drift.</strong> Surfaces oxidise and foul, walking the calibration out of true — the reason commercial probes specify a recalibration interval instead of promising indefinite accuracy.</li>
+    </ul>
 
     <!-- ===== takeaways ===== -->
     <h2>What I took from it</h2>
 
-    <ul>
-      <li><strong>The invisible half of a circuit is still part of the circuit.</strong> The electron path is the one you draw; the ion path is the one that decides whether the drawing works. Building the cell rather than buying a probe is what made that concrete.</li>
-      <li><strong>Pin budget is a design constraint like any other.</strong> Choosing I²C over parallel for the display was not about elegance — it was about not spending eleven pins of a fourteen-pin board on an output.</li>
-      <li><strong>A sensor without a calibration story is a number generator.</strong> The ADC will happily report a count whether or not that count means anything. The curve, the range, and the drift mechanism are the parts that turn it into a measurement.</li>
+    <ul class="tight">
+      <li><strong>The invisible half of a circuit is still part of the circuit.</strong> The electron path is the one you draw; the ion path decides whether the drawing works.</li>
+      <li><strong>Pin budget is a design constraint like any other.</strong> I²C over parallel wasn't about elegance — it was about not spending 11 of 14 pins on an output device.</li>
+      <li><strong>A sensor without a calibration story is a number generator.</strong> The ADC reports a count whether or not that count means anything.</li>
     </ul>
 
     <nav class="artnav">

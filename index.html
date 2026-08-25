@@ -10,8 +10,8 @@
 <meta property="og:description" content="Embedded systems, closed-loop control, PCB design, and thermal actuator research.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
-<link rel="stylesheet" href="assets/css/site.css">
-<script src="assets/js/site.js"></script>
+<link rel="stylesheet" href="assets/css/site.css?v=2">
+<script src="assets/js/site.js?v=2"></script>
 </head>
 <body>
 
@@ -36,11 +36,10 @@
     <div class="hero__kicker">Electrical Engineering · Texas A&amp;M · B.S. expected May 2029</div>
     <h1>I build the electronics<br>that measure and control<br>moving machines.</h1>
     <p class="hero__lede">
-      Embedded firmware, closed-loop control, and PCB design — currently on the
-      <strong>Controls &amp; DAQ subteam for Texas A&amp;M Baja SAE 2027</strong>, and running an
-      independent research build on <strong>liquid-cooled robotic actuators</strong>.
-      Most of what I care about happens where a datasheet number meets a bench measurement
-      that disagrees with it.
+      Embedded firmware, closed-loop control, and PCB design. Currently
+      <strong>Controls &amp; DAQ on Texas A&amp;M Baja SAE 2027</strong>, plus an independent
+      research build on <strong>liquid-cooled robotic actuators</strong>. The work I like best
+      happens where a datasheet number meets a bench measurement that disagrees with it.
     </p>
     <div class="linkrow">
       <a class="primary" href="#work">Selected work ↓</a>
@@ -73,10 +72,9 @@
         <div class="card__id"><span class="dot"></span> BAJA-DAQ · 2026 – present</div>
         <h3>Vehicle Data Acquisition &amp; Dynamometer Control</h3>
         <p>
-          A distributed CAN bus node and an engine dynamometer brake actuator for a
-          single-seat off-road race car. Four-architecture trade study, force transmission
-          analysis, ANSYS FEA, ESP32-C3 firmware, and a sensor front end that had to be
-          rebuilt from scratch after the bench disagreed with the math.
+          A distributed CAN node and an engine dynamometer brake actuator for a single-seat
+          race car. Four-architecture trade study, ANSYS FEA, ESP32-C3 firmware — and a sensor
+          front end I rebuilt from scratch after the bench disagreed with the math.
         </p>
         <div class="tags">
           <span>STM32G431</span><span>FDCAN</span><span>KiCad</span>
@@ -88,10 +86,9 @@
         <div class="card__id"><span class="dot"></span> SCATA · 2025 – present</div>
         <h3>Liquid-Cooled Proximal-Actuated Robot Arm</h3>
         <p>
-          Electric arms are limited by heat, not magnetics. SCATA attacks that ceiling on
-          three fronts at once — resin-sealed liquid cooling, motors relocated to a static
-          base, and a controller that tapers torque against a live winding-temperature
-          estimate instead of tripping a cutoff.
+          Electric arms are limited by heat, not magnetics. Three fronts at once: resin-sealed
+          liquid cooling, motors relocated to a static base, and a controller that tapers
+          torque against a live winding-temperature estimate instead of tripping a cutoff.
         </p>
         <div class="tags">
           <span>BLDC / FOC</span><span>moteus</span><span>Thermal control</span>
