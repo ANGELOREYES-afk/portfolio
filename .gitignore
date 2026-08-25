@@ -1,7 +1,11 @@
 .DS_Store
 **/.DS_Store
+_dgm_preview.html
 
-# raw staging folders — source images live in assets/img/ once processed
+# raw staging image folders — processed copies live in assets/img/
 /Dynometer/
 /Hoverboard/
 /PCB/
+/Orp sensor/
+/Joint/
+/Cooling system demo example with drill spinning centrifuge of epoxy/

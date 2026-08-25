@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ORP Sensor System — Angelo Reyes</title>
+<meta name="description" content="A galvanic cell built as a salinity sensor — hand-cast agar salt bridge, Arduino differential voltmeter, and an I²C LCD reading redox potential from 0 to 5000 ppm.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/site.js"></script>
+<style>
+  .dgm { width: 100%; height: auto; }
+  .dgm .glass   { fill: var(--bg-sunken); stroke: var(--ink-dim); stroke-width: 1.4; }
+  .dgm .soln    { fill: var(--accent); opacity: .13; }
+  .dgm .soln2   { fill: var(--ok); opacity: .13; }
+  .dgm .metal   { fill: var(--ink-mid); }
+  .dgm .bridgetube {
+    fill: none; stroke: var(--ink-dim); stroke-width: 30;
+    stroke-linejoin: round; opacity: .3;
+  }
+  .dgm .wire    { stroke: var(--ink); stroke-width: 1.6; fill: none; }
+  .dgm .eflow   { stroke: var(--accent); stroke-width: 1.6; fill: none; }
+  .dgm .iflow   { stroke: var(--ok); stroke-width: 1.6; fill: none; stroke-dasharray: 4 3; }
+  .dgm .box     { fill: var(--bg-raised); stroke: var(--line); stroke-width: 1.4; }
+  .dgm text     { font-family: var(--mono); font-size: 10px; fill: var(--ink-mid); }
+  .dgm text.t   { font-size: 11px; fill: var(--ink); }
+  .dgm text.e   { fill: var(--accent); }
+  .dgm text.i   { fill: var(--ok); }
+  .dgm text.big { font-size: 13px; fill: var(--ink); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__in">
+    <a class="topbar__name" href="../index.html"><b>ANGELO REYES</b> <span>/ EE</span></a>
+    <nav>
+      <a href="../index.html#work">Work</a>
+      <a href="baja-daq.html">Baja DAQ</a>
+      <a class="opt" href="scata-arm.html">SCATA</a>
+      <button class="themebtn" data-theme-toggle type="button">auto</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<div class="arthead">
+  <div class="wrap">
+    <a class="crumb" href="../index.html#work">← All work</a>
+    <h1>ORP Sensor System</h1>
+    <p class="sub">
+      A galvanic cell built as a salinity instrument. Two dissimilar electrodes in separated
+      half-cells, joined by a hand-cast agar salt bridge, with an Arduino reading the resulting
+      redox potential and driving an I²C character display.
+    </p>
+    <div class="tags">
+      <span>Arduino</span><span>C++</span><span>I²C</span><span>Electrochemistry</span>
+      <span>0–5000 ppm</span>
+    </div>
+  </div>
+</div>
+
+<article class="article">
+  <div class="wrap">
+
+    <p>
+      Oxidation-reduction potential is a single voltage that summarises how strongly a solution
+      wants to give up or accept electrons. It is a useful proxy for water quality because
+      dissolved ions change how readily charge moves between two electrodes placed in that
+      water — so a millivolt reading maps back onto ionic concentration.
+    </p>
+    <p>
+      Rather than buy an ORP probe, I built the cell itself. That meant the measurement problem
+      and the electrochemistry problem had to be solved together: <strong>the cell generates a
+      voltage, but only if the ions have a return path — and the return path is the part most
+      people forget.</strong>
+    </p>
+
+    <!-- ===== the cell ===== -->
+    <h2>The galvanic cell</h2>
+
+    <p>
+      A galvanic cell is two half-reactions kept physically apart and connected by two separate
+      routes. Electrons take the external wire; ions take the salt bridge. Break either one and
+      the cell stops within moments.
+    </p>
+
+    <figure>
+      <svg class="dgm" viewBox="0 0 660 412" role="img" aria-labelledby="cellTitle cellDesc">
+        <title id="cellTitle">Galvanic cell with agar salt bridge and Arduino voltmeter</title>
+        <desc id="cellDesc">Two beakers of electrolyte, each holding a metal electrode. The anode oxidises and releases electrons, which travel through the external wire to the Arduino analog input and on to the cathode, where reduction occurs. An agar salt bridge arches between the two beakers, carrying anions toward the anode and cations toward the cathode to keep both half-cells electrically neutral. Without the bridge, charge builds up and current stops.</desc>
+
+        <!-- ---- left beaker: ANODE ---- -->
+        <path class="glass" d="M 92 176 L 92 336 Q 92 346 102 346 L 216 346 Q 226 346 226 336 L 226 176"/>
+        <path class="soln"  d="M 93 214 L 93 336 Q 93 345 102 345 L 216 345 Q 225 345 225 336 L 225 214 Z"/>
+        <line class="glass" x1="93" y1="214" x2="225" y2="214" stroke-dasharray="3 3"/>
+
+        <!-- ---- right beaker: CATHODE ---- -->
+        <path class="glass" d="M 414 176 L 414 336 Q 414 346 424 346 L 538 346 Q 548 346 548 336 L 548 176"/>
+        <path class="soln2" d="M 415 214 L 415 336 Q 415 345 424 345 L 538 345 Q 547 345 547 336 L 547 214 Z"/>
+        <line class="glass" x1="415" y1="214" x2="547" y2="214" stroke-dasharray="3 3"/>
+
+        <!-- ---- salt bridge: one thick stroked tube, drawn over the beakers
+                  so both legs are visibly submerged ---- -->
+        <path class="bridgetube"
+              d="M 166 262 L 166 140 Q 166 116 190 116 L 400 116 Q 424 116 424 140 L 424 262"/>
+
+        <!-- ---- electrodes ---- -->
+        <rect class="metal" x="120" y="150" width="10" height="172" rx="1"/>
+        <rect class="metal" x="510" y="150" width="10" height="172" rx="1"/>
+
+        <!-- ---- external circuit ---- -->
+        <path class="wire" d="M 125 150 L 125 44 L 250 44"/>
+        <path class="wire" d="M 410 44 L 515 44 L 515 150"/>
+
+        <rect class="box" x="250" y="20" width="160" height="48" rx="4"/>
+        <text class="t" x="330" y="40" text-anchor="middle">Arduino A0 / A1</text>
+        <text x="330" y="56" text-anchor="middle">10-bit ADC</text>
+
+        <!-- electron flow -->
+        <path class="eflow" d="M 168 44 L 208 44" marker-end="url(#are)"/>
+        <path class="eflow" d="M 444 44 L 484 44" marker-end="url(#are)"/>
+        <text class="e" x="188" y="34" text-anchor="middle">e⁻</text>
+        <text class="e" x="464" y="34" text-anchor="middle">e⁻</text>
+
+        <!-- ion flow, on the tube centreline -->
+        <path class="iflow" d="M 300 116 L 262 116" marker-end="url(#ari)"/>
+        <path class="iflow" d="M 320 116 L 358 116" marker-end="url(#ari)"/>
+        <text class="i" x="252" y="120" text-anchor="end">anions</text>
+        <text class="i" x="368" y="120">cations</text>
+
+        <!-- centre labels, in the empty gap between beakers -->
+        <text class="t" x="295" y="162" text-anchor="middle">agar salt bridge</text>
+        <text x="295" y="178" text-anchor="middle">KCl gel · ionic return path</text>
+
+        <text class="t" x="320" y="280" text-anchor="middle">V<tspan font-size="8" dy="2">cell</tspan><tspan dy="-2"> = E</tspan><tspan font-size="8" dy="2">cathode</tspan><tspan dy="-2"> − E</tspan><tspan font-size="8" dy="2">anode</tspan></text>
+
+        <!-- ---- half-cell captions ---- -->
+        <text class="big" x="159" y="374" text-anchor="middle">ANODE (−)</text>
+        <text x="159" y="392" text-anchor="middle">oxidation · M → Mⁿ⁺ + n e⁻</text>
+
+        <text class="big" x="481" y="374" text-anchor="middle">CATHODE (+)</text>
+        <text x="481" y="392" text-anchor="middle">reduction · Mⁿ⁺ + n e⁻ → M</text>
+
+        <defs>
+          <marker id="are" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" style="fill:var(--accent)"/>
+          </marker>
+          <marker id="ari" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" style="fill:var(--ok)"/>
+          </marker>
+        </defs>
+      </svg>
+      <figcaption>
+        <b>Figure 1.</b> The cell. Electrons leave the anode, travel the external wire through
+        the Arduino's analog input, and arrive at the cathode — that is the current the meter
+        reads. Simultaneously the agar bridge carries anions back toward the anode and cations
+        toward the cathode. <b>Both loops are required.</b> The electron path alone would leave
+        the anode compartment positively charged and the cathode compartment negatively charged
+        within moments, and that build-up opposes further reaction until the cell stalls.
+      </figcaption>
+    </figure>
+
+    <div class="callout">
+      <h4>Why a salt bridge and not just a wire</h4>
+      <p>
+        A wire moves electrons; it cannot move ions. As the anode oxidises it pumps positive
+        metal ions into its own solution, and the cathode strips positive ions out of its
+        solution. Without an ionic return path, each compartment accumulates net charge and the
+        potential difference driving the reaction collapses. The bridge lets a counter-current
+        of ions cancel that accumulation — <strong>it does not carry the signal, it removes the
+        reason the signal would stop.</strong>
+      </p>
+    </div>
+
+    <h3>Casting the bridge</h3>
+    <p>
+      The bridge is agar gel saturated with a neutral salt, cast into a U-shape and set solid.
+      Agar was the right choice for three reasons: it is porous enough for ions to migrate
+      through, it is stiff enough to hold its shape spanning two open beakers without a housing,
+      and it stops the two solutions from bulk-mixing — which would short the cell chemically
+      and destroy the measurement even while the meter kept reading something plausible.
+    </p>
+    <p>
+      The salt has to be chosen so that neither of its ions participates in either half-reaction.
+      A bridge whose ions react is not a bridge; it is a third electrode contaminating both
+      compartments.
+    </p>
+
+    <!-- ===== instrumentation ===== -->
+    <h2>Reading it</h2>
+
+    <figure>
+      <img src="../assets/img/orp-arduino-build.jpg" alt="Arduino Uno wired on a wooden board to a blue backlit 16x2 character LCD with an I2C backpack, with jumper wires running to a breadboard and probe leads exiting frame.">
+      <figcaption>
+        <b>Figure 2.</b> The instrument as built. Arduino Uno at bottom, a 16×2 character LCD
+        with an I²C backpack at top, and the breadboard carrying the probe connections. Four
+        wires reach the display — power, ground, SDA, SCL — which is the entire reason the I²C
+        backpack is there.
+      </figcaption>
+    </figure>
+
+    <h3>Why I²C for the display</h3>
+    <p>
+      A bare HD44780 character LCD wants six to eleven GPIO pins in parallel mode. On an Uno with
+      only six analog inputs and fourteen digital pins — several of which the probe circuit and
+      serial debugging already wanted — that is an unaffordable amount of the board spent on an
+      output device.
+    </p>
+    <p>
+      The I²C backpack collapses that to two shared bus lines plus power and ground. SDA carries
+      data, SCL carries the clock, and the address is set on the backpack itself, so the display
+      costs two pins that other I²C devices can also sit on. Everything freed up goes back to the
+      measurement side, which is the part that actually needs the board.
+    </p>
+
+    <figure>
+      <svg class="dgm" viewBox="0 0 620 250" role="img" aria-labelledby="wireTitle wireDesc">
+        <title id="wireTitle">Voltmeter wiring</title>
+        <desc id="wireDesc">The anode and cathode leads enter the Arduino's analog inputs. The Arduino drives the LCD over I2C using SDA and SCL, with 5 volts and ground shared across both.</desc>
+
+        <!-- Arduino -->
+        <rect class="box" x="240" y="86" width="140" height="76" rx="4"/>
+        <text class="big" x="310" y="112" text-anchor="middle">Arduino Uno</text>
+        <text x="310" y="130" text-anchor="middle">10-bit ADC</text>
+        <text x="310" y="146" text-anchor="middle">I²C master</text>
+
+        <!-- cell block -->
+        <rect class="box" x="40" y="86" width="130" height="76" rx="4"/>
+        <text class="big" x="105" y="112" text-anchor="middle">Galvanic cell</text>
+        <text x="105" y="132" text-anchor="middle">anode (−)</text>
+        <text x="105" y="148" text-anchor="middle">cathode (+)</text>
+
+        <!-- display -->
+        <rect class="box" x="450" y="86" width="130" height="76" rx="4"/>
+        <text class="big" x="515" y="112" text-anchor="middle">16×2 LCD</text>
+        <text x="515" y="132" text-anchor="middle">I²C backpack</text>
+        <text x="515" y="148" text-anchor="middle">addr 0x27</text>
+
+        <!-- cell to arduino -->
+        <path class="wire" d="M 170 112 L 240 112" marker-end="url(#arw)"/>
+        <path class="wire" d="M 170 140 L 240 140" marker-end="url(#arw)"/>
+        <text x="205" y="106" text-anchor="middle">A0</text>
+        <text x="205" y="134" text-anchor="middle">A1</text>
+
+        <!-- arduino to display -->
+        <path class="wire" d="M 380 112 L 450 112" marker-end="url(#arw)"/>
+        <path class="wire" d="M 380 140 L 450 140" marker-end="url(#arw)"/>
+        <text x="415" y="106" text-anchor="middle">SDA</text>
+        <text x="415" y="134" text-anchor="middle">SCL</text>
+
+        <!-- power rail -->
+        <path class="wire" d="M 310 86 L 310 46 L 515 46 L 515 86"/>
+        <text x="412" y="40" text-anchor="middle">+5 V</text>
+
+        <!-- ground rail -->
+        <path class="wire" d="M 105 162 L 105 206 L 515 206 L 515 162"/>
+        <line class="wire" x1="310" y1="162" x2="310" y2="206"/>
+        <text x="200" y="222" text-anchor="middle">GND — common reference across all three</text>
+
+        <defs>
+          <marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" style="fill:var(--ink)"/>
+          </marker>
+        </defs>
+      </svg>
+      <figcaption>
+        <b>Figure 3.</b> Wiring, redrawn from my build sketch. The electrode pair enters on analog
+        inputs; the display hangs off the I²C bus. The detail worth naming is the shared ground —
+        the ADC measures against the board's reference, so the cell's negative lead and the
+        board's ground must be the same node or the reading has no defined zero.
+      </figcaption>
+    </figure>
+
+    <figure>
+      <img src="../assets/img/orp-sketch.jpg" alt="Hand-drawn wiring sketch titled Voltameter Schematic, showing 5V to VCC branching to SDA data and SCL clock, anode and cathode arrows into a box labelled Arduino, and SCL and SDA running down to a box labelled Display with GND.">
+      <figcaption><b>Figure 4.</b> The original bench sketch the diagram above was drawn from.</figcaption>
+    </figure>
+
+    <h3>From millivolts to ppm</h3>
+    <p>
+      The Arduino's 10-bit ADC resolves the full input span into 1024 steps. The raw count is
+      converted to a potential, and that potential is mapped onto concentration against a
+      calibration curve built by measuring solutions of known salinity across the working range:
+    </p>
+
+    <div class="eq">
+      0 – 5000 ppm
+      <small>Working range. Calibration points at known concentrations anchor the curve; readings between them are interpolated.</small>
+    </div>
+
+    <p>
+      Two things constrain accuracy here and both are worth stating plainly rather than hiding.
+      Cell potential is temperature-dependent, so a reading taken in a cold room and a reading
+      taken in a warm one are not directly comparable without compensation. And electrode surfaces
+      change over time as they oxidise and foul, which walks the calibration slowly out of true —
+      the reason commercial probes specify a recalibration interval rather than promising
+      indefinite accuracy.
+    </p>
+
+    <!-- ===== takeaways ===== -->
+    <h2>What I took from it</h2>
+
+    <ul>
+      <li><strong>The invisible half of a circuit is still part of the circuit.</strong> The electron path is the one you draw; the ion path is the one that decides whether the drawing works. Building the cell rather than buying a probe is what made that concrete.</li>
+      <li><strong>Pin budget is a design constraint like any other.</strong> Choosing I²C over parallel for the display was not about elegance — it was about not spending eleven pins of a fourteen-pin board on an output.</li>
+      <li><strong>A sensor without a calibration story is a number generator.</strong> The ADC will happily report a count whether or not that count means anything. The curve, the range, and the drift mechanism are the parts that turn it into a measurement.</li>
+    </ul>
+
+    <nav class="artnav">
+      <a href="scata-arm.html">← SCATA Arm</a>
+      <a href="../index.html#work">All work →</a>
+    </nav>
+
+  </div>
+</article>
+
+</main>
+
+<footer>
+  <div class="wrap in">
+    <span>Angelo Reyes — Electrical Engineering, Texas A&amp;M University</span>
+    <a href="../index.html">Home</a>
+    <span class="sp">ORP sensor · 2024</span>
+  </div>
+</footer>
+
+</body>
+</html>
