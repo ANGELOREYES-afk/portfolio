@@ -10,8 +10,8 @@
 <meta property="og:description" content="Embedded systems, closed-loop control, PCB design, and thermal actuator research.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
-<link rel="stylesheet" href="assets/css/site.css?v=2">
-<script src="assets/js/site.js?v=2"></script>
+<link rel="stylesheet" href="assets/css/site.css?v=3">
+<script src="assets/js/site.js?v=3"></script>
 </head>
 <body>
 
@@ -115,11 +115,22 @@
         <p>
           A galvanic cell built as a salinity instrument rather than bought as a probe —
           hand-cast agar salt bridge, Arduino differential voltmeter, I²C character display,
-          calibrated across 0–5000 ppm.
+          calibrated across 250–5000 ppm.
         </p>
         <div class="tags">
           <span>Arduino</span><span>C++</span><span>I²C</span><span>Electrochemistry</span>
         </div>
+      </a>
+
+      <a class="card" href="projects/pixel-generation.html">
+        <div class="card__id"><span class="dot"></span> PIXEL-GEN · 2025</div>
+        <h3>Pixel Generation — Diffusion Model &amp; BLE App</h3>
+        <p>
+          An iOS pixel-art editor with a denoising diffusion model behind it and a bit-packed
+          BLE transport in front — one bit per pixel, because the HM-10's characteristic gives
+          you about twenty usable bytes per write.
+        </p>
+        <div class="tags"><span>Swift</span><span>CoreBluetooth</span><span>HM-10</span><span>DDPM</span></div>
       </a>
 
     </div>
@@ -208,6 +219,25 @@
           <li>Built training programs for powertrain systems, CAD, and autonomous programming.</li>
           <li>Three VEX World Championship appearances — 1st in Texas, Texas Finalist, Top 5 Skills State.</li>
         </ul>
+
+        <div class="gallery wide">
+          <figure>
+            <img src="assets/img/vex-lever-arm.jpg" alt="VEX competition robot on a workshop floor: aluminium C-channel frame, omni wheels, chain and sprocket drive, pneumatic cylinder, and a raised lever arm carrying conveyor tracks.">
+            <figcaption>Top lever arm for pick-and-place on wall stakes, with the conveyor that feeds it. Chain drive, pneumatics, and omni wheels on an aluminium C-channel frame.</figcaption>
+          </figure>
+          <figure>
+            <img src="assets/img/vex-field-run.jpg" alt="A VEX competition robot numbered 24626 on a High Stakes field, surrounded by red rings, yellow mobile goal stakes, and the black wall-stake structure.">
+            <figcaption>Team 24626 running the High Stakes field — the intake and its secondary hood are what kept rings seated through transit between stakes.</figcaption>
+          </figure>
+          <figure>
+            <img src="assets/img/vex-cad.jpg" alt="CAD model of a VEX robot assembly.">
+            <figcaption>CAD of the assembly — modelled before build so subsystem clashes surfaced on screen rather than on the floor.</figcaption>
+          </figure>
+          <figure>
+            <img src="assets/img/vex-state-win.jpg" alt="Team photo of about a dozen students seated on steps with their competition robot in front of them and a results scoreboard projected behind.">
+            <figcaption>State win with the team and the competition robot, results on the board behind.</figcaption>
+          </figure>
+        </div>
       </div>
     </div>
 
@@ -267,17 +297,6 @@
         </p>
         <div class="tags"><span>Verilog</span><span>Icarus</span><span>GTKWave</span><span>View source ↗</span></div>
       </a>
-
-      <div class="card">
-        <div class="card__id"><span class="dot"></span> Jul – Sep 2025</div>
-        <h3>Pixel Generation ML App</h3>
-        <p>
-          An iOS app for pixel art creation and wireless transmission — WiFi to HM-10 BLE
-          radio for real-time transfer, with denoising diffusion probabilistic models
-          generating the art itself.
-        </p>
-        <div class="tags"><span>Swift</span><span>TensorFlow</span><span>BLE</span><span>DDPM</span></div>
-      </div>
     </div>
   </div>
 </section>

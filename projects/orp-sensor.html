@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ORP Sensor System — Angelo Reyes</title>
-<meta name="description" content="A galvanic cell built as a salinity sensor — hand-cast agar salt bridge, Arduino differential voltmeter, and an I²C LCD reading redox potential from 0 to 5000 ppm.">
+<meta name="description" content="A galvanic cell built as a salinity sensor — hand-cast agar salt bridge, Arduino differential voltmeter, and an I²C LCD reading redox potential from 250 to 5000 ppm.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
-<link rel="stylesheet" href="../assets/css/site.css?v=2">
-<script src="../assets/js/site.js?v=2"></script>
+<link rel="stylesheet" href="../assets/css/site.css?v=3">
+<script src="../assets/js/site.js?v=3"></script>
 <style>
   .dgm { width: 100%; height: auto; }
   .dgm .glass   { fill: var(--bg-sunken); stroke: var(--ink-dim); stroke-width: 1.4; }
@@ -38,6 +38,7 @@
       <a href="../index.html#work">Work</a>
       <a href="baja-daq.html">Baja DAQ</a>
       <a class="opt" href="scata-arm.html">SCATA</a>
+      <a class="opt" href="pixel-generation.html">Pixel</a>
       <button class="themebtn" data-theme-toggle type="button">auto</button>
     </nav>
   </div>
@@ -50,13 +51,13 @@
     <a class="crumb" href="../index.html#work">← All work</a>
     <h1>ORP Sensor System</h1>
     <p class="sub">
-      A galvanic cell built as a salinity instrument. Two dissimilar electrodes in separated
-      half-cells, joined by a hand-cast agar salt bridge, with an Arduino reading the resulting
-      redox potential and driving an I²C character display.
+      A galvanic cell built as a salinity instrument — an Ag/AgCl reference electrode in KCl
+      against an inert platinum electrode, joined by a hand-cast agar salt bridge, with an
+      Arduino reading the resulting redox potential onto an I²C character display.
     </p>
     <div class="tags">
-      <span>Arduino</span><span>C++</span><span>I²C</span><span>Electrochemistry</span>
-      <span>0–5000 ppm</span>
+      <span>Arduino</span><span>C++</span><span>I²C</span><span>Ag/AgCl</span>
+      <span>Platinum</span><span>250–5000 ppm</span>
     </div>
   </div>
 </div>
@@ -66,8 +67,8 @@
 
     <dl class="glance">
       <div><dt>Problem</dt><dd>Measure water salinity without buying a commercial ORP probe</dd></div>
-      <div><dt>Built</dt><dd>The galvanic cell itself — electrodes, hand-cast agar salt bridge, Arduino voltmeter, I²C display</dd></div>
-      <div><dt>Range</dt><dd><b>0–5000 ppm</b>, calibrated against solutions of known concentration</dd></div>
+      <div><dt>Built</dt><dd>The galvanic cell itself — <b>Ag/AgCl reference in KCl</b>, <b>inert Pt electrode</b>, hand-cast agar salt bridge, Arduino voltmeter, I²C display</dd></div>
+      <div><dt>Range</dt><dd><b>250–5000 ppm</b>, calibrated against solutions of known concentration</dd></div>
       <div><dt>Key idea</dt><dd>A cell needs <b>two</b> loops — electrons through the wire, ions through the bridge. Break either and it stalls.</dd></div>
     </dl>
 
@@ -104,6 +105,10 @@
         <!-- ---- electrodes ---- -->
         <rect class="metal" x="120" y="150" width="10" height="172" rx="1"/>
         <rect class="metal" x="510" y="150" width="10" height="172" rx="1"/>
+        <text class="t" x="108" y="146" text-anchor="middle">Ag/AgCl</text>
+        <text class="t" x="532" y="146" text-anchor="middle">Pt</text>
+        <text x="180" y="312" text-anchor="middle">KCl solution</text>
+        <text x="468" y="312" text-anchor="middle">sample water</text>
 
         <!-- ---- external circuit ---- -->
         <path class="wire" d="M 125 150 L 125 44 L 250 44"/>
@@ -132,11 +137,11 @@
         <text class="t" x="320" y="280" text-anchor="middle">V<tspan font-size="8" dy="2">cell</tspan><tspan dy="-2"> = E</tspan><tspan font-size="8" dy="2">cathode</tspan><tspan dy="-2"> − E</tspan><tspan font-size="8" dy="2">anode</tspan></text>
 
         <!-- ---- half-cell captions ---- -->
-        <text class="big" x="159" y="374" text-anchor="middle">ANODE (−)</text>
-        <text x="159" y="392" text-anchor="middle">oxidation · M → Mⁿ⁺ + n e⁻</text>
+        <text class="big" x="159" y="374" text-anchor="middle">ANODE (−) · Ag/AgCl</text>
+        <text x="159" y="392" text-anchor="middle">oxidation · Ag + Cl⁻ → AgCl + e⁻</text>
 
-        <text class="big" x="481" y="374" text-anchor="middle">CATHODE (+)</text>
-        <text x="481" y="392" text-anchor="middle">reduction · Mⁿ⁺ + n e⁻ → M</text>
+        <text class="big" x="481" y="374" text-anchor="middle">CATHODE (+) · Pt</text>
+        <text x="481" y="392" text-anchor="middle">reduction · 2H⁺ + 2e⁻ → H₂</text>
 
         <defs>
           <marker id="are" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
@@ -154,6 +159,45 @@
         toward the cathode. <b>Both loops are required.</b> The electron path alone would leave
         the anode compartment positively charged and the cathode compartment negatively charged
         within moments, and that build-up opposes further reaction until the cell stalls.
+      </figcaption>
+    </figure>
+
+    <h3>The two half-reactions</h3>
+
+    <div class="rxn">
+      <div>
+        <h5>Anode (−) — Ag/AgCl in KCl</h5>
+        <code>Ag + Cl⁻ → AgCl + e⁻</code>
+        <p>Silver oxidises and binds chloride from the KCl, releasing an electron. Because the
+        chloride activity is held fixed by the KCl, this side sits at a <strong>stable known
+        potential</strong> — that's what makes it a reference rather than just an electrode.</p>
+      </div>
+      <div>
+        <h5>Cathode (+) — inert platinum</h5>
+        <code>2H⁺ + 2e⁻ → H₂</code>
+        <p>Platinum is chosen precisely because it <strong>does not react</strong>. It only
+        donates a surface for reduction, so the measured potential reflects the solution's
+        chemistry instead of the electrode dissolving into it.</p>
+      </div>
+    </div>
+
+    <div class="callout plain">
+      <h4>Why one electrode has to be boring</h4>
+      <p>
+        A cell potential is a <em>difference</em>. If both electrodes shifted with the sample,
+        you couldn't attribute the reading to anything. Pinning one side with Ag/AgCl means
+        every millivolt of change is attributable to the platinum side — which is where the
+        sample is. <strong>The reference electrode isn't the measurement; it's what makes the
+        measurement mean something.</strong>
+      </p>
+    </div>
+
+    <figure>
+      <img src="../assets/img/orp-schematic-sketch.jpg" alt="Hand-drawn ORP front-end schematic showing the Ag/AgCl anode inside a KCl compartment with chloride ions, an electron flow arrow crossing to a platinum cathode, and the two half-reactions written beside each electrode.">
+      <figcaption>
+        <b>Figure 2.</b> The front-end schematic as I worked it out — Ag/AgCl sitting in the
+        KCl compartment on the left, electrons crossing to the Pt electrode on the right, with
+        both half-reactions written in place.
       </figcaption>
     </figure>
 
@@ -175,13 +219,24 @@
       <li><strong>Neither of the salt's ions may participate in either half-reaction.</strong> A bridge whose ions react isn't a bridge; it's a third electrode contaminating both compartments.</li>
     </ul>
 
+    <div class="gallery">
+      <figure>
+        <img src="../assets/img/orp-agar-prep.jpg" alt="A 250 mL beaker of amber agar solution heating on a Flinn Scientific hotplate stirrer.">
+        <figcaption><b>Figure 3.</b> Dissolving the agar with the salt on a hotplate stirrer — it has to be fully in solution before casting or the set gel traps voids that break the ionic path.</figcaption>
+      </figure>
+      <figure>
+        <img src="../assets/img/orp-halfcell.jpg" alt="Two blue-wired electrodes inserted into a white cup, one of them a syringe body with agar set at its tip.">
+        <figcaption><b>Figure 4.</b> The assembled half-cell. The agar is cast into the tip of a syringe body, which makes the bridge rigid, replaceable, and small enough to sit in a cup.</figcaption>
+      </figure>
+    </div>
+
     <!-- ===== instrumentation ===== -->
     <h2>Reading it</h2>
 
     <figure>
       <img src="../assets/img/orp-arduino-build.jpg" alt="Arduino Uno wired on a wooden board to a blue backlit 16x2 character LCD with an I2C backpack, with jumper wires running to a breadboard and probe leads exiting frame.">
       <figcaption>
-        <b>Figure 2.</b> The instrument as built. Arduino Uno at bottom, a 16×2 character LCD
+        <b>Figure 5.</b> The instrument as built. Arduino Uno at bottom, a 16×2 character LCD
         with an I²C backpack at top, and the breadboard carrying the probe connections. Four
         wires reach the display — power, ground, SDA, SCL — which is the entire reason the I²C
         backpack is there.
@@ -246,7 +301,7 @@
         </defs>
       </svg>
       <figcaption>
-        <b>Figure 3.</b> Wiring, redrawn from my build sketch. The electrode pair enters on analog
+        <b>Figure 6.</b> Wiring, redrawn from my build sketch. The electrode pair enters on analog
         inputs; the display hangs off the I²C bus. The detail worth naming is the shared ground —
         the ADC measures against the board's reference, so the cell's negative lead and the
         board's ground must be the same node or the reading has no defined zero.
@@ -255,14 +310,14 @@
 
     <figure>
       <img src="../assets/img/orp-sketch.jpg" alt="Hand-drawn wiring sketch titled Voltameter Schematic, showing 5V to VCC branching to SDA data and SCL clock, anode and cathode arrows into a box labelled Arduino, and SCL and SDA running down to a box labelled Display with GND.">
-      <figcaption><b>Figure 4.</b> The original bench sketch the diagram above was drawn from.</figcaption>
+      <figcaption><b>Figure 7.</b> The original bench sketch the diagram above was drawn from.</figcaption>
     </figure>
 
     <h3>From millivolts to ppm</h3>
     <p>
       The 10-bit ADC resolves the input span into 1024 steps. Raw count converts to a potential,
       which maps onto concentration against a calibration curve anchored at known salinities
-      across <strong>0–5000 ppm</strong>. Two limits worth stating plainly:
+      across <strong>250–5000 ppm</strong>. Two limits worth stating plainly:
     </p>
 
     <ul class="tight">
@@ -281,7 +336,7 @@
 
     <nav class="artnav">
       <a href="scata-arm.html">← SCATA Arm</a>
-      <a href="../index.html#work">All work →</a>
+      <a href="pixel-generation.html">Pixel Generation →</a>
     </nav>
 
   </div>
