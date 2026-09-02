@@ -1,0 +1,139 @@
+% =====================================================================
+%  Actuator Force Calculations — CIM + Koors40 + SFU1204 Ball Screw
+%  CORRECTED: lead screw is SFU1204 (4 mm lead), not SFU1205 (5 mm).
+%  The lead sits in the denominator of the core equation, so this
+%  scales every downstream force by 5/4 = 1.25x.
+%  Compile: pdflatex actuator-force-calcs.tex
+% =====================================================================
+\documentclass[11pt]{article}
+\usepackage[margin=0.9in]{geometry}
+\usepackage{amsmath,amssymb,booktabs,siunitx,array,bm}
+\usepackage[table]{xcolor}
+\setlength{\parindent}{0pt}
+\renewcommand{\arraystretch}{1.15}
+
+\begin{document}
+
+\begin{center}
+{\LARGE\bfseries Force Calculations --- CIM + Koors40 + SFU1204 Ball Screw}\\[4pt]
+{\small Lead screw: \textbf{SFU1204, 4\,mm lead}}
+\end{center}
+\vspace{0.6em}
+
+%% ---------------- given terms ----------------
+\begin{center}
+\begin{tabular}{@{}ll@{\hskip 2.2em}ll@{}}
+\multicolumn{2}{@{}l}{\bfseries CIM Motor (am-0255)} & \multicolumn{2}{l}{\bfseries Koors40 Controller (am-5600)}\\
+\midrule
+Rated Voltage  & \SI{12}{\volt} DC          & Input Voltage Range   & \SI{6}{\volt} -- \SI{18}{\volt}\\
+Free Speed     & \SI{5310}{rpm}             & Continuous Current    & \textbf{\SI{40}{\ampere}}\\
+Free Current   & \SI{2.7}{\ampere}          & PWM Input (normal)    & \SI{1000}{\micro\second} -- \SI{2000}{\micro\second}\\
+Stall Torque   & \textbf{\SI{2.425}{\newton\meter}} & PWM Input (extended) & \SI{500}{\micro\second} -- \SI{2500}{\micro\second}\\
+Stall Current  & \SI{133}{\ampere}          & &\\
+Peak Power     & \SI{337}{\watt}            & &\\
+Shaft Diameter & \SI{8}{\milli\meter} (0.313 in.) & &\\
+\bottomrule
+\end{tabular}
+\end{center}
+\vspace{0.4em}
+
+%% ---------------- core equation ----------------
+\section*{Core Equation}
+
+\begin{equation}
+F_{\text{piston}} \;=\; T_{\text{motor}}\cdot GR \cdot \eta_{\text{gearbox}}\cdot
+\frac{2\pi\,\eta_{\text{screw}}}{L}
+\end{equation}
+
+$\eta_{\text{gearbox}} = 0.85$,\quad $\eta_{\text{screw}} = 0.90$,\quad
+$L = \SI{0.004}{\meter}$ \textbf{(SFU1204, 4\,mm lead)},\quad
+$\eta_{\text{combined}} = 0.765$
+
+\begin{equation}
+F_{\text{piston}} \;=\; T_{\text{motor}}\cdot GR \times \mathbf{1201.7}
+\qquad [\si{\newton} \text{ per } \si{\newton\meter}]
+\end{equation}
+
+\textbf{Operating Point A} --- Koors40 continuous limit (\SI{40}{\ampere}):
+\[
+T_{\text{motor}} = k_t\,(I - I_{\text{free}}) = 0.01823 \times (40 - 2.7) = \SI{0.680}{\newton\meter}
+\]
+
+%% ---------------- required vs available ----------------
+\section*{Required Force at Master Cylinder}
+
+Wilwood $\tfrac{5}{8}$\,in (\SI{15.875}{\milli\meter}) bore:
+$A_{\text{piston}} = \tfrac{\pi}{4}(0.015875)^2 = \SI{1.979e-4}{\meter\squared}$
+
+\begin{center}
+\begin{tabular}{@{}llr@{}}
+\toprule
+\textbf{Pressure} & \textbf{Calc} & \textbf{Force}\\
+\midrule
+\SI{300}{psi}  (light)     & \SI{2.068}{\mega\pascal}  $\times A$ & \SI{409}{\newton}\\
+\SI{600}{psi}  (moderate)  & \SI{4.137}{\mega\pascal}  $\times A$ & \SI{819}{\newton}\\
+\SI{1000}{psi} (hard)      & \SI{6.895}{\mega\pascal}  $\times A$ & \SI{1365}{\newton}\\
+\SI{1500}{psi} (near max)  & \SI{10.342}{\mega\pascal} $\times A$ & \SI{2047}{\newton}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section*{Available Force @ \SI{40}{\ampere}}
+
+$F_{\text{piston}} = T_{\text{motor}}\cdot GR \times 1201.7$
+
+\begin{center}
+\begin{tabular}{@{}lrrrc@{}}
+\toprule
+\textbf{GR} & \textbf{$F_{\text{piston}}$} & \textbf{(lbf)} & \textbf{Pressure} & \textbf{$\geq$ 2047\,N}\\
+\midrule
+5:1              & \SI{4086}{\newton}  & 919  & \SI{2994}{psi}  & \checkmark\\
+10:1             & \SI{8171}{\newton}  & 1837 & \SI{5987}{psi}  & \checkmark\\
+\textbf{20:1}    & \textbf{\SI{16342}{\newton}} & \textbf{3674} & \textbf{\SI{11975}{psi}} & \checkmark\\
+50:1             & \SI{40855}{\newton} & 9185 & \SI{29937}{psi} & \checkmark\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+At the selected 20:1 ratio:
+$\SI{16342}{\newton} \div \SI{1.979e-4}{\meter\squared} = \SI{11975}{psi}$,
+i.e.\ \textbf{3674\,lbf} against a \textbf{1000\,lbf} operational target
+(\textbf{3.7$\times$ margin}) and a \textbf{5000\,lbf} ball-screw axial rating.
+
+%% ---------------- speed ----------------
+\section*{Speed --- The Cost of the Reduction}
+
+At 20:1 the screw turns at $5310/20 = \SI{265.5}{rpm}$:
+\[
+v = \frac{265.5}{60}\times\SI{4}{\milli\meter} = \SI{17.7}{\milli\meter\per\second}
+\qquad\Rightarrow\qquad
+\SI{25}{\milli\meter}\ \text{stroke} = \SI{1.41}{\second}
+\]
+
+A shorter lead trades speed for force: versus the 5\,mm assumption the actuator
+is \textbf{25\% stronger and 20\% slower}. Acceptable, because a dynamometer
+applies steady-state load during an RPM sweep rather than reacting to transients.
+
+%% ---------------- what changed ----------------
+\section*{Correction Summary}
+
+\begin{center}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Quantity} & \textbf{Was (5\,mm)} & \textbf{Now (4\,mm)} & \textbf{Change}\\
+\midrule
+Multiplier         & 961.3  & \textbf{1201.7} & $\times 1.25$\\
+$F$ @ 5:1          & \SI{3268}{\newton}  & \SI{4086}{\newton}  & $\times 1.25$\\
+$F$ @ 10:1         & \SI{6537}{\newton}  & \SI{8171}{\newton}  & $\times 1.25$\\
+$F$ @ 20:1         & \SI{13074}{\newton} & \SI{16342}{\newton} & $\times 1.25$\\
+$F$ @ 50:1         & \SI{32684}{\newton} & \SI{40855}{\newton} & $\times 1.25$\\
+Pressure @ 20:1    & \SI{9580}{psi}      & \SI{11975}{psi}     & $\times 1.25$\\
+Screw speed @ 20:1 & \SI{22.1}{\milli\meter\per\second} & \SI{17.7}{\milli\meter\per\second} & $\times 0.80$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+$L$ appears in the denominator, so a 20\% shorter lead raises every force by
+exactly 25\% and lowers linear speed by exactly 20\%. No other term moves.
+
+\end{document}

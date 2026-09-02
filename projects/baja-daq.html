@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vehicle DAQ &amp; Dynamometer Control — Angelo Reyes</title>
-<meta name="description" content="A distributed CAN node and engine dynamometer brake actuator for Texas A&amp;M Baja SAE 2027 — trade studies, FEA, ESP32-C3 firmware, and a sensor front end rebuilt after bench testing.">
+<meta name="description" content="Instrumenting an engine dynamometer and designing its brake actuator for Texas A&amp;M Baja SAE 2027 — sensor bring-up, trade studies, FEA, and a distributed CAN node.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
-<link rel="stylesheet" href="../assets/css/site.css?v=3">
-<script src="../assets/js/site.js?v=3"></script>
+<link rel="stylesheet" href="../assets/css/site.css?v=4">
+<script src="../assets/js/site.js?v=4"></script>
 </head>
 <body>
 
@@ -32,7 +32,8 @@
     <h1>Vehicle DAQ &amp;<br>Dynamometer Control</h1>
     <p class="sub">
       Texas A&amp;M Baja SAE races a single-seat off-road car against ~100 university teams.
-      The Controls subteam owns every sensor, wire, and line of firmware on it.
+      The Controls subteam owns every sensor, wire, and line of firmware on it — and the test
+      equipment that validates the powertrain before it reaches the track.
     </p>
     <div class="tags">
       <span>STM32G431</span><span>FDCAN</span><span>KiCad</span><span>ESP32-C3</span>
@@ -50,56 +51,135 @@
 
     <dl class="glance">
       <div><dt>Role</dt><dd>Controls &amp; Data Acquisition Engineer · Mar 2026 – present</dd></div>
-      <div><dt>Owned</dt><dd>Two systems: a <b>dynamometer brake actuator</b> and the <b>rear CAN node PCB</b></dd></div>
-      <div><dt>Built</dt><dd>Complete KiCad schematic (14-sensor network), ESP32-C3 test firmware, actuator mechanical design</dd></div>
-      <div><dt>Headline</dt><dd><b>2,940 lbf</b> commandable force at continuous current — 2.9× the 1,000 lbf target</dd></div>
-      <div><dt>Status</dt><dd>Schematic through ERC · firmware validated on hardware · next: layout, fab, closed-loop PID</dd></div>
+      <div><dt>Owned</dt><dd>Dyno instrumentation, the <b>brake actuator</b>, and the <b>rear CAN node PCB</b></dd></div>
+      <div><dt>Arc</dt><dd>Arduino sensor bring-up → actuator design and manufacture → ESP32 + Koors40 closed loop</dd></div>
+      <div><dt>Headline</dt><dd><b>3,674 lbf</b> commandable at continuous current — 3.7× the 1,000 lbf operational target</dd></div>
+      <div><dt>Status</dt><dd>Actuator built and driven · rear node schematic through ERC · next: layout, fab, closed-loop PID</dd></div>
     </dl>
 
     <div class="stats">
-      <div class="stat"><b>13,074 N</b><span>Force at 40 A</span></div>
-      <div class="stat"><b>4.8×</b><span>Margin vs. target</span></div>
+      <div class="stat"><b>16,342 N</b><span>Force at 40 A</span></div>
+      <div class="stat"><b>3.7×</b><span>Margin vs. target</span></div>
       <div class="stat"><b>14</b><span>Sensors in scope</span></div>
       <div class="stat"><b>5</b><span>Trade studies</span></div>
     </div>
 
     <!-- ============ 1 ============ -->
-    <h2>1 — Dynamometer brake actuator</h2>
+    <h2>1 — Instrumenting the dyno</h2>
 
     <p>
-      A dynamometer measures engine torque by loading a spinning flywheel and reading the
-      reaction force. I owned the actuator: <strong>compress a hydraulic master cylinder with
-      force that is commandable</strong> — a specific value on demand, repeatable across runs,
-      adjustable under closed-loop control. That last requirement eliminated most of the
-      obvious solutions.
+      Before anything could be actuated, the dyno had to be able to <em>measure</em>. The first
+      build was deliberately unambitious: an Arduino Mega, three sensors, and an oscilloscope
+      to find out which of them actually behaved as advertised.
     </p>
 
-    <h3>Trade study — four architectures</h3>
+    <figure>
+      <img src="../assets/img/dyno-sensor-stack.jpg" alt="The dynamometer sensor set laid out together: hall effect pickups, a load cell, and the inductive sensor with their wiring.">
+      <figcaption><b>Figure 1.</b> The full first-pass sensor set — hall effect pickups, load cell, and inductive pickup, wired together for bring-up.</figcaption>
+    </figure>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Signal</th><th>Sensor</th><th>What it gives</th></tr></thead>
+        <tbody>
+          <tr><td>Primary RPM</td><td>Inductive, on the ignition lead</td><td>Engine speed, without contacting the shaft</td></tr>
+          <tr><td>Secondary RPM</td><td>Hall effect, 3 pulses/rev</td><td>CVT output speed → calculated ratio</td></tr>
+          <tr><td>Reaction torque</td><td>Load cell + HX711</td><td>Force at the moment arm → engine torque</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <figure>
+      <img src="../assets/img/dyno-hall-pickup.jpg" alt="Hall effect sensor brackets mounted on the dynamometer shaft, with signal wiring running back through lever-nut connectors to the DAQ.">
+      <figcaption><b>Figure 2.</b> Hall pickups mounted to the dyno shaft. The bracket has to hold the sensor inside its sensing gap while the shaft runs — mounting was as much of the problem as sensing.</figcaption>
+    </figure>
+
+    <figure>
+      <img src="../assets/img/dyno-daq-bench.jpg" alt="Dynamometer sensor bench: Arduino board, bench power supply, and wiring harness laid out on a work table beside the flywheel and engine.">
+      <figcaption><b>Figure 3.</b> The Arduino-stage bench — perfboard front ends and a bench supply, with the flywheel and engine in frame. Everything here exists to answer one question per sensor: does the signal survive the trip to the pin?</figcaption>
+    </figure>
+
+    <h3>The inductive pickup — where the scope earned its keep</h3>
+
+    <p>
+      The inductive sensor produces a roughly 12 V bipolar pulse, well past a 3.3 V input's
+      absolute maximum. The obvious fix is a divider, and I designed a deliberately
+      high-impedance one — 147 kΩ total, drawing only 82 µA — precisely <em>because</em>
+      inductive pickups have high source impedance.
+    </p>
+
+    <div class="callout">
+      <h4>The most instructive failure of the project</h4>
+      <p>
+        On the scope it sagged to <strong>2.4 V</strong> — below the logic threshold. The
+        sensor could not source even 82 µA without collapsing. My analysis identified the right
+        parameter and underestimated it by enough to make the circuit non-functional.
+      </p>
+    </div>
+
+    <div class="ba">
+      <div class="b1">
+        <h5>Original — attenuate the signal</h5>
+        <p>100k / 47k divider with Schottky clamps. Depends entirely on the sensor being able to drive the divider. It couldn't.</p>
+      </div>
+      <div class="b2">
+        <h5>Rebuild — regenerate the signal</h5>
+        <p>2N3904 open-collector. The sensor becomes a <em>switch</em>; logic level is regenerated from board supply. It supplies only ~0.38 mA of base current, and its 12 V never reaches the MCU.</p>
+      </div>
+    </div>
+
+<pre>                    +3.3V
+                      │
+                   [4.7k]  <span class="c">← pull-up sets logic HIGH from board supply</span>
+                      │
+SENSOR ──[10k]──┬─────┴──────▶ MCU pin
+                │
+                B  ┤ 2N3904 (NPN)
+                │
+             [10k]  E
+                │     │
+               GND   GND</pre>
+
+    <figure>
+      <img src="../assets/img/dyno-npn-rebuild.jpg" alt="A small perfboard carrying a 2N3904 transistor and two resistors, wired into a breadboard beside a microcontroller, with one lead labelled PRIMARY in marker on blue tape.">
+      <figcaption>
+        <b>Figure 4.</b> The rebuilt front end on perfboard — transistor, base resistor, and
+        pull-up, with the primary inductive lead taped and labelled. Small enough to be wrong
+        cheaply, which is the point of building it here rather than on the PCB.
+      </figcaption>
+    </figure>
+
+    <ul class="tight">
+      <li><strong>The transistor inverts the signal</strong>, so timer capture triggers on the rising edge — the sensor <em>releasing</em>, not firing.</li>
+      <li><strong>The Hall channel needed the opposite treatment.</strong> It's open-collector, so a 4.7 kΩ pull-up to 3.3 V sets the logic level even though the sensor runs on 5 V — no level shifting required.</li>
+      <li><strong>4.7 kΩ balances two failure modes.</strong> Larger, and the RC with parasitic capacitance rounds edges at 250 Hz; smaller, and the sensor sinks too much. At 4.7 kΩ: 0.7 mA sink, adequate edge rate.</li>
+      <li><strong>The generalisable lesson:</strong> a datasheet voltage tells you what a part outputs, not what it can output into a load.</li>
+    </ul>
+
+    <!-- ============ 2 ============ -->
+    <h2>2 — Designing the actuator</h2>
+
+    <p>
+      With sensing proven, the dyno needed a way to <em>apply</em> load. A dynamometer measures
+      engine torque by loading a spinning flywheel and reading the reaction force, so I owned
+      the actuator: <strong>compress a hydraulic master cylinder with force that is
+      commandable</strong> — a specific value on demand, repeatable across runs, adjustable
+      under closed-loop control. That last requirement eliminated most of the obvious solutions.
+    </p>
+
+    <figure>
+      <img src="../assets/img/act-trade-study.jpg" alt="Trade study slide comparing four candidate actuation architectures for the dynamometer brake.">
+      <figcaption><b>Figure 5.</b> The trade study as presented to the subteam.</figcaption>
+    </figure>
 
     <div class="tablewrap">
       <table>
         <thead><tr><th>Architecture</th><th>Verdict</th><th>Reason</th></tr></thead>
         <tbody>
-          <tr>
-            <td>Mechanical lever arm</td>
-            <td><span class="no">Rejected</span></td>
-            <td>Mechanical advantage varies with arm position → non-linear plant → one set of PID gains can't be right across the stroke</td>
-          </tr>
-          <tr>
-            <td><strong>Slab ball screw</strong></td>
-            <td><span class="yes">Selected</span></td>
-            <td>Constant force at every stroke position; inherently low-backlash from the preloaded nut</td>
-          </tr>
-          <tr>
-            <td>Slab gear drive</td>
-            <td><span class="no">Rejected</span></td>
-            <td>Same kinematics but adds backlash, which directly degrades position accuracy in a loop</td>
-          </tr>
-          <tr>
-            <td>Hydraulic solenoid</td>
-            <td><span class="no">Rejected</span></td>
-            <td>New pump, accumulator, valve; replaces load cell feedback with a pressure transducer; leaks in a student shop</td>
-          </tr>
+          <tr><td>Mechanical lever arm</td><td><span class="no">Rejected</span></td><td>Mechanical advantage varies with arm position → non-linear plant → one set of PID gains can't be right across the stroke</td></tr>
+          <tr><td><strong>Slab ball screw</strong></td><td><span class="yes">Selected</span></td><td>Constant force at every stroke position; inherently low-backlash from the preloaded nut</td></tr>
+          <tr><td>Slab gear drive</td><td><span class="no">Rejected</span></td><td>Same kinematics but adds backlash, which directly degrades position accuracy in a loop</td></tr>
+          <tr><td>Hydraulic solenoid</td><td><span class="no">Rejected</span></td><td>New pump, accumulator, valve; replaces load cell feedback with a pressure transducer; leaks in a student shop</td></tr>
         </tbody>
       </table>
     </div>
@@ -114,37 +194,61 @@
       </p>
     </div>
 
-    <h3>Sizing the transmission</h3>
+    <h3>The transmission chain</h3>
 
-    <p>
-      Motor torque → gear reduction → ball screw thrust → hydraulic pressure. With a 20:1
-      planetary, an SFU1205 screw (5 mm lead), and combined efficiency of 0.765:
-    </p>
+    <figure>
+      <img src="../assets/img/act-pipeline.jpg" alt="Block diagram: CIM motor into planetary gearbox, flexible coupling, ball screw, push plate, with the governing equation at each stage.">
+      <figcaption><b>Figure 6.</b> Motor torque → gear reduction → ball screw thrust → hydraulic pressure, with the governing relation at each transition.</figcaption>
+    </figure>
+
+    <h3>Sizing it</h3>
 
     <div class="eq">
-      F<sub>piston</sub> = T<sub>motor</sub> × GR × 961.3 &nbsp; [N per N·m]
-      <small>T<sub>motor</sub> = k<sub>t</sub>(I − I<sub>free</sub>) = 0.01823 × (40 − 2.7) = <strong>0.680 N·m</strong></small>
+      F<sub>piston</sub> = T<sub>motor</sub> × GR × η<sub>gearbox</sub> × (2π·η<sub>screw</sub> / L)
+      <small>η<sub>gearbox</sub> = 0.85 · η<sub>screw</sub> = 0.90 · L = 0.004 m (SFU1204, 4 mm lead) → F<sub>piston</sub> = T<sub>motor</sub> × GR × <strong>1201.7</strong> N per N·m</small>
+    </div>
+
+    <div class="eq">
+      T<sub>motor</sub> = k<sub>t</sub>(I − I<sub>free</sub>) = 0.01823 × (40 − 2.7) = <strong>0.680 N·m</strong>
     </div>
 
     <div class="tablewrap">
       <table>
-        <thead><tr><th>Gear ratio</th><th>Piston force</th><th>Pressure</th><th>Margin vs. 1,000 PSI</th></tr></thead>
+        <thead><tr><th>Gear ratio</th><th>Piston force</th><th>lbf</th><th>Pressure</th><th>≥ 2,047 N?</th></tr></thead>
         <tbody>
-          <tr><td>5:1</td><td>735 lbf</td><td>2,395 PSI</td><td>2.4×</td></tr>
-          <tr><td>10:1</td><td>1,470 lbf</td><td>4,791 PSI</td><td>4.8×</td></tr>
-          <tr><td><strong>20:1 (selected)</strong></td><td><strong>2,940 lbf</strong></td><td>9,580 PSI</td><td>9.6×</td></tr>
-          <tr><td>50:1</td><td>7,348 lbf</td><td>23,952 PSI</td><td>24×</td></tr>
+          <tr><td>5:1</td><td>4,086 N</td><td>919</td><td>2,994 PSI</td><td><span class="yes">✓</span></td></tr>
+          <tr><td>10:1</td><td>8,171 N</td><td>1,837</td><td>5,987 PSI</td><td><span class="yes">✓</span></td></tr>
+          <tr><td><strong>20:1 (selected)</strong></td><td><strong>16,342 N</strong></td><td><strong>3,674</strong></td><td>11,975 PSI</td><td><span class="yes">✓</span></td></tr>
+          <tr><td>50:1</td><td>40,855 N</td><td>9,185</td><td>29,937 PSI</td><td><span class="yes">✓</span></td></tr>
         </tbody>
       </table>
     </div>
 
     <ul class="tight">
+      <li><strong>The requirement comes from the master cylinder, not the motor.</strong> A Wilwood 5/8" bore gives A = 1.979 × 10⁻⁴ m², so 1,500 PSI at the piston — near-max braking — needs 2,047 N. Every ratio clears it; the question was which clears it with the right margin.</li>
       <li><strong>Sized to the controller, not the motor.</strong> The CIM stalls at 133 A but the Koors40 sustains 40 A. Designing to stall torque means designing for an operating point the electronics can't hold and the motor can't survive thermally.</li>
-      <li><strong>The margin is deliberate.</strong> 2,940 lbf sits inside the screw's 5,000 lbf axial rating, keeps the motor off its thermal limit, and absorbs the friction hand calcs understate.</li>
-      <li><strong>It costs speed.</strong> 22 mm/s → ~1 s for a 25 mm stroke. Fine for steady-state RPM sweeps; the trade was evaluated up front, not discovered later.</li>
+      <li><strong>20:1 gives 3,674 lbf</strong> against a 1,000 lbf operational target and a 5,000 lbf ball-screw axial rating — enough headroom to absorb the friction and stiction hand calcs understate, without running the screw near its limit.</li>
+      <li><strong>It costs speed.</strong> 265.5 RPM at the screw → 17.7 mm/s, so a 25 mm stroke takes ~1.4 s. Fine for steady-state RPM sweeps; the trade was evaluated up front, not discovered later.</li>
     </ul>
 
-    <h3>FEA on the push slab</h3>
+    <div class="callout plain">
+      <h4>A correction worth recording</h4>
+      <p>
+        These figures were originally computed with a 5 mm lead. The screw is an
+        <strong>SFU1204 — 4 mm lead</strong>. Because <em>L</em> sits in the denominator, a 20%
+        shorter lead raises every force by exactly <strong>25%</strong> and drops linear speed
+        by exactly <strong>20%</strong>. Nothing else in the chain moves, which is what makes
+        the error easy to miss and easy to fix: one number propagates cleanly through
+        everything downstream.
+      </p>
+    </div>
+
+    <h3>Structure and manufacture</h3>
+
+    <figure>
+      <img src="../assets/img/act-architecture.jpg" alt="Architecture summary slide beside an ANSYS static structural safety factor plot of the push slab, showing a minimum of 1.0229.">
+      <figcaption><b>Figure 7.</b> Architecture summary and the ANSYS safety-factor result on the push slab.</figcaption>
+    </figure>
 
     <div class="callout plain">
       <h4>Minimum FOS 1.023 — not a passing result</h4>
@@ -161,25 +265,37 @@
       </p>
     </div>
 
-    <!-- ============ 2 ============ -->
-    <h2>2 — Firmware and control</h2>
+    <div class="gallery">
+      <figure>
+        <img src="../assets/img/act-slab-fea.jpg" alt="ANSYS static structural safety factor contour plot of the push slab.">
+        <figcaption><b>Figure 8.</b> Safety-factor contour — the minimum sits at the narrow waist by the upper mounting hole.</figcaption>
+      </figure>
+      <figure>
+        <img src="../assets/img/act-cad.jpg" alt="CAD assembly of the actuator: motor, planetary gearbox, coupling, ball screw and push plate in their bracket.">
+        <figcaption><b>Figure 9.</b> The assembly in CAD — motor, gearbox, coupling, screw, and push plate in one bracket.</figcaption>
+      </figure>
+    </div>
 
-    <figure>
-      <img src="../assets/img/dyno-daq-bench.jpg" alt="Dynamometer sensor bench: Arduino board, bench power supply, and wiring harness laid out on a work table beside the flywheel and engine.">
-      <figcaption><b>Figure 1.</b> Sensor bench during bring-up — perfboard front ends wired back to the microcontroller, flywheel and engine in frame at bottom.</figcaption>
-    </figure>
+    <!-- ============ 3 ============ -->
+    <h2>3 — Driving it: ESP32 and the Koors40</h2>
 
     <p>
-      Runs on an <strong>ESP32-C3</strong> — hardware LEDC PWM, hardware pulse counting, enough
-      GPIO, under $10. Split into separate translation units so teammates can change one
-      subsystem without reading the others.
+      With the actuator built, control moved off the Arduino and onto an <strong>ESP32-C3</strong>
+      — hardware LEDC PWM, hardware pulse counting, enough GPIO, under $10. Firmware is split
+      into separate translation units for sensor acquisition, motor command, and control logic,
+      so teammates can change one subsystem without reading the others.
     </p>
+
+    <figure>
+      <img src="../assets/img/act-koors-testing.jpg" alt="The actuator on a bench connected to a Koors40 motor controller and a bench power supply during driver testing.">
+      <figcaption><b>Figure 10.</b> Koors40 driver bring-up — commanding the actuator off a bench supply before it ever saw the dyno.</figcaption>
+    </figure>
 
     <div class="tablewrap">
       <table>
         <thead><tr><th>Signal</th><th>Interface</th><th>Method</th></tr></thead>
         <tbody>
-          <tr><td>Primary RPM</td><td>Inductive</td><td>Falling-edge ISR, period measured in µs between edges</td></tr>
+          <tr><td>Primary RPM</td><td>Inductive → 2N3904</td><td>Falling-edge ISR, period measured in µs between edges</td></tr>
           <tr><td>Secondary RPM</td><td>Hall effect</td><td>Falling-edge ISR, 3 pulses/rev, 5,000 RPM ceiling</td></tr>
           <tr><td>Load cell</td><td>HX711</td><td>24-bit ADC, cal factor −695.0, EMA filter (α = 0.20)</td></tr>
           <tr><td>Motor command</td><td>LEDC PWM</td><td>50 Hz, 14-bit, 1000–2000 µs to the Koors40</td></tr>
@@ -211,7 +327,7 @@
     <h3>Failing safe</h3>
     <p>
       If no fresh HX711 conversion arrives within one second, the ready flag clears and the
-      controller commands neutral. <strong>On a rig capable of nearly 3,000 lbf, the difference
+      controller commands neutral. <strong>On a rig capable of over 3,600 lbf, the difference
       between stopping and pushing on stale data matters.</strong>
     </p>
 
@@ -251,7 +367,7 @@
           <tr><td>PWM command</td><td>20 ms</td><td>50 Hz Koors40 servo protocol</td></tr>
           <tr><td>Load cell sample</td><td>~12.5 ms</td><td>HX711 at 80 SPS</td></tr>
           <tr><td>EMA filter lag</td><td>Several samples</td><td>α = 0.20</td></tr>
-          <tr><td><strong>Full actuator stroke</strong></td><td><strong>~1 s</strong></td><td>20:1 gear reduction</td></tr>
+          <tr><td><strong>Full actuator stroke</strong></td><td><strong>~1.4 s</strong></td><td>20:1 reduction on a 4 mm lead</td></tr>
         </tbody>
       </table>
     </div>
@@ -262,12 +378,21 @@
       over speed.</strong>
     </p>
 
-    <!-- ============ 3 ============ -->
-    <h2>3 — Rear CAN node PCB</h2>
+    <figure>
+      <img src="../assets/img/act-final-setup.jpg" alt="The completed actuator assembly on a workbench: CIM motor, planetary gearbox, flexible coupling and ball screw in a machined bracket, wired to the Koors40 driver and a bench power supply.">
+      <figcaption>
+        <b>Figure 11.</b> The assembled actuator driven off the bench — CIM motor, planetary
+        gearbox, coupling, and ball screw in the bracket, with the Koors40 and supply alongside.
+      </figcaption>
+    </figure>
+
+    <!-- ============ 4 ============ -->
+    <h2>4 — From bench to vehicle: the rear CAN node</h2>
 
     <p>
-      The vehicle DAQ is a distributed CAN network. The rear node reads engine RPM, CVT
-      secondary RPM, and two rear shock pots, and publishes them to the bus.
+      Everything above lives on a test stand. The car itself runs a distributed CAN network with
+      front, rear, and central nodes; the rear node acquires powertrain and rear-suspension data
+      and publishes it to the bus — engine RPM, CVT secondary RPM, and two rear shock pots.
     </p>
 
     <h3>Why STM32G431RBTx</h3>
@@ -290,62 +415,6 @@
       35%-weighted durability criterion can't accept).
     </p>
 
-    <h3>Two RPM channels, two different front ends</h3>
-
-    <figure>
-      <img src="../assets/img/dyno-hall-pickup.jpg" alt="Hall effect sensor brackets mounted on the dynamometer shaft, with signal wiring running back through lever-nut connectors to the DAQ.">
-      <figcaption><b>Figure 2.</b> Hall pickups on the dyno shaft. Both channels are nominally "RPM sensors" — their output topologies are different enough to demand separate interface circuits.</figcaption>
-    </figure>
-
-    <ul class="tight">
-      <li><strong>Hall — open collector.</strong> Sinks current, can't source it. A 4.7 kΩ pull-up sets logic high. The detail: <strong>pull-up goes to 3.3 V while the sensor runs on 5 V</strong> — open-collector means the pull-up rail alone sets the high level, so no level shifting is needed.</li>
-      <li><strong>4.7 kΩ balances two failures.</strong> Larger, and the RC with parasitic capacitance rounds edges at 250 Hz; smaller, and the sensor sinks too much. At 4.7 kΩ: 0.7 mA sink, adequate edge rate.</li>
-    </ul>
-
-    <div class="callout">
-      <h4>The most instructive failure of the project</h4>
-      <p>
-        The inductive pickup outputs ~12 V — well past the STM32's 3.6 V maximum. I designed a
-        high-impedance divider (147 kΩ, drawing only 82 µA) precisely <em>because</em> inductive
-        pickups have high source impedance.
-      </p>
-      <p>
-        <strong>On the bench it sagged to 2.4 V — below the logic threshold.</strong> The sensor
-        couldn't source even 82 µA without collapsing. My analysis identified the right
-        parameter and underestimated it by enough to make the circuit non-functional.
-      </p>
-    </div>
-
-    <div class="ba">
-      <div class="b1">
-        <h5>Original — attenuate the signal</h5>
-        <p>47k / 147k divider with Schottky clamps. Depends entirely on the sensor being able to drive the divider. It couldn't.</p>
-      </div>
-      <div class="b2">
-        <h5>Rebuild — regenerate the signal</h5>
-        <p>2N3904 open-collector. The sensor becomes a <em>switch</em>; logic level is regenerated from board supply. It now supplies only ~0.38 mA of base current, and its 12 V never reaches the MCU.</p>
-      </div>
-    </div>
-
-<pre>                    +3.3V
-                      │
-                   [4.7k]  <span class="c">← pull-up sets logic HIGH from board supply</span>
-                      │
-SENSOR ──[10k]──┬─────┴──────▶ MCU pin
-                │
-                B  ┤ 2N3904 (NPN)
-                │
-             [10k]  E
-                │     │
-               GND   GND</pre>
-
-    <p>
-      Side effect worth documenting: the transistor inverts, so timer capture must trigger on
-      the rising edge — the sensor <em>releasing</em>, not firing. The generalisable lesson:
-      <strong>a datasheet voltage tells you what a part outputs, not what it can output into a
-      load.</strong>
-    </p>
-
     <h3>Power integrity</h3>
     <ul class="tight">
       <li><strong>600 Ω @ 100 MHz ferrite</strong> isolates VDDA from the digital rail. Chosen over an inductor because ferrites dissipate HF energy as heat rather than storing it — an inductor here forms a resonant tank with the decoupling caps and rings.</li>
@@ -360,8 +429,8 @@ SENSOR ──[10k]──┬─────┴──────▶ MCU pin
       <li><strong>Discovered during layout: DT is wire-to-wire only, no PCB-mount variant.</strong> I spent real time hunting a footprint that doesn't exist. Solution is a pigtail — Molex Micro-Fit 3.0 with mounting pegs on the board side, pegs transferring vibration load into the board instead of the solder joints.</li>
     </ul>
 
-    <!-- ============ 4 ============ -->
-    <h2>4 — Systems integration</h2>
+    <!-- ============ 5 ============ -->
+    <h2>5 — Systems integration</h2>
 
     <p>
       Interim Design Review criticised the subteam for specifying sensors without confirming
@@ -410,7 +479,8 @@ SENSOR ──[10k]──┬─────┴──────▶ MCU pin
     <ul class="tight">
       <li><strong>Design to the real constraint, not the headline spec.</strong> The operating point is set by whichever component in the chain gives out first — here, the controller at 40 A, not the motor at 133 A.</li>
       <li><strong>A mechanical choice can be a control choice.</strong> The lever arm lost on transfer-function grounds. You only see that if you evaluate mechanical and control architecture together.</li>
-      <li><strong>Trust measurement over analysis.</strong> The divider was calculated correctly and still failed. The right response was finding the unmodelled parameter, not defending the math.</li>
+      <li><strong>Trust measurement over analysis.</strong> The divider was calculated correctly and still failed on the scope. The right response was finding the unmodelled parameter, not defending the math.</li>
+      <li><strong>One wrong constant propagates silently.</strong> A 5 mm lead where a 4 mm one belonged shifted every force in the chain by 25% — and nothing downstream looked obviously wrong, because the arithmetic was internally consistent.</li>
       <li><strong>Scope reduction is progress.</strong> Cutting justified sensors was correct once it was clear nobody would use the data.</li>
     </ul>
 

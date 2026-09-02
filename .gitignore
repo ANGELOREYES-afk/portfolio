@@ -13,3 +13,8 @@ _check.html
 /Pixel art generation project/
 /Vex Photos/
 /Rear node pcb/
+
+# LaTeX build artifacts
+docs/*.aux
+docs/*.log
+docs/*.out
