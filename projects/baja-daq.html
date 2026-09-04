@@ -68,14 +68,19 @@
     <h2>1 — Instrumenting the dyno</h2>
 
     <p>
-      Before anything could be actuated, the dyno had to be able to <em>measure</em>. The first
-      build was deliberately unambitious: an Arduino Mega, three sensors, and an oscilloscope
-      to find out which of them actually behaved as advertised.
+      Before anything could be actuated, the dyno had to be able to <em>measure</em>. That
+      started on an Arduino Mega with three sensors and an oscilloscope, working one channel at
+      a time to establish which of them actually behaved as advertised.
     </p>
 
     <figure>
-      <img src="../assets/img/dyno-sensor-stack.jpg" alt="The dynamometer sensor set laid out together: hall effect pickups, a load cell, and the inductive sensor with their wiring.">
-      <figcaption><b>Figure 1.</b> The full first-pass sensor set — hall effect pickups, load cell, and inductive pickup, wired together for bring-up.</figcaption>
+      <img src="../assets/img/dyno-hall-pickup.jpg" alt="Hall effect sensor brackets mounted on the dynamometer shaft, with signal wiring running back through lever-nut connectors to the DAQ.">
+      <figcaption><b>Figure 1.</b> Hall pickups mounted to the dyno shaft. The bracket has to hold the sensor inside its sensing gap while the shaft runs — mounting was as much of the problem as sensing.</figcaption>
+    </figure>
+
+    <figure>
+      <img src="../assets/img/dyno-daq-bench.jpg" alt="Dynamometer sensor bench: Arduino board, bench power supply, and wiring harness laid out on a work table beside the flywheel and engine.">
+      <figcaption><b>Figure 2.</b> The Arduino-stage bench — perfboard front ends and a bench supply, with the flywheel and engine in frame. Everything here exists to answer one question per sensor: does the signal survive the trip to the pin?</figcaption>
     </figure>
 
     <div class="tablewrap">
@@ -89,15 +94,6 @@
       </table>
     </div>
 
-    <figure>
-      <img src="../assets/img/dyno-hall-pickup.jpg" alt="Hall effect sensor brackets mounted on the dynamometer shaft, with signal wiring running back through lever-nut connectors to the DAQ.">
-      <figcaption><b>Figure 2.</b> Hall pickups mounted to the dyno shaft. The bracket has to hold the sensor inside its sensing gap while the shaft runs — mounting was as much of the problem as sensing.</figcaption>
-    </figure>
-
-    <figure>
-      <img src="../assets/img/dyno-daq-bench.jpg" alt="Dynamometer sensor bench: Arduino board, bench power supply, and wiring harness laid out on a work table beside the flywheel and engine.">
-      <figcaption><b>Figure 3.</b> The Arduino-stage bench — perfboard front ends and a bench supply, with the flywheel and engine in frame. Everything here exists to answer one question per sensor: does the signal survive the trip to the pin?</figcaption>
-    </figure>
 
     <div class="callout plain">
       <h4>Aside — the same sensor, on the car</h4>
@@ -118,7 +114,7 @@
     <figure>
       <img src="../assets/img/daq-hall-mount-26.jpg" alt="CAD render of a hall effect sensor bracket that clamps around a gearbox shaft housing, with a sensor pocket and mounting holes.">
       <figcaption>
-        <b>Figure 4.</b> Hall effect mount for the gearbox shaft — <b>2026 car DAQ harness</b>,
+        <b>Figure 3.</b> Hall effect mount for the gearbox shaft — <b>2026 car DAQ harness</b>,
         not the dynamometer. The pocket holds the sensor inside its sensing gap while the clamp
         takes the load off the sensor body.
       </figcaption>
@@ -168,7 +164,7 @@ SENSOR ──[10k]──┬─────┴──────▶ MCU pin
     <figure>
       <img src="../assets/img/dyno-npn-rebuild.jpg" alt="A small perfboard carrying a 2N3904 transistor and two resistors, wired into a breadboard beside a microcontroller, with one lead labelled PRIMARY in marker on blue tape.">
       <figcaption>
-        <b>Figure 5.</b> The rebuilt front end on perfboard — transistor, base resistor, and
+        <b>Figure 4.</b> The rebuilt front end on perfboard — transistor, base resistor, and
         pull-up, with the primary inductive lead taped and labelled. Small enough to be wrong
         cheaply, which is the point of building it here rather than on the PCB.
       </figcaption>
@@ -180,6 +176,17 @@ SENSOR ──[10k]──┬─────┴──────▶ MCU pin
       <li><strong>4.7 kΩ balances two failure modes.</strong> Larger, and the RC with parasitic capacitance rounds edges at 250 Hz; smaller, and the sensor sinks too much. At 4.7 kΩ: 0.7 mA sink, adequate edge rate.</li>
       <li><strong>The generalisable lesson:</strong> a datasheet voltage tells you what a part outputs, not what it can output into a load.</li>
     </ul>
+
+    <h3>Where it ended up</h3>
+
+    <figure>
+      <img src="../assets/img/dyno-sensor-stack.jpg" alt="The dynamometer sensor set laid out together: hall effect pickups, a load cell, and the inductive sensor with their wiring.">
+      <figcaption>
+        <b>Figure 5.</b> The current sensor set — hall pickups, load cell, and the reworked
+        inductive channel, wired together as one harness rather than three separate bring-ups.
+        This is where the channels above ended up after the front ends were settled.
+      </figcaption>
+    </figure>
 
     <!-- ============ 2 ============ -->
     <h2>2 — Designing the actuator</h2>
