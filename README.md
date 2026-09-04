@@ -7,6 +7,10 @@ stylesheet, one small JS file for the theme toggle. It runs anywhere that can se
 index.html                  home — hero, work, experience, skills, contact
 projects/baja-daq.html      Vehicle DAQ & dynamometer control (Baja SAE 2027)
 projects/scata-arm.html     SCATA — liquid-cooled proximal-actuated robot arm
+projects/orp-sensor.html    ORP galvanic cell salinity instrument
+projects/pixel-generation.html  Diffusion model + BLE iOS app
+projects/plant-dielectra.html   DIELECTRA plant-chemistry PCB
+docs/                       LaTeX sources (actuator force calculations)
 assets/css/site.css         all styling; light + dark via CSS custom properties
 assets/js/site.js           theme toggle (auto → light → dark), persisted
 assets/img/                 photographs
@@ -22,20 +26,8 @@ Then open <http://localhost:8000>.
 
 ## Deploy to GitHub Pages
 
-You already own `ANGELOREYES-afk.github.io`, which currently serves the older resume site.
-Two options:
-
-**A — replace the existing site** (portfolio lives at `angeloreyes-afk.github.io`):
-
-```bash
-git remote add origin https://github.com/ANGELOREYES-afk/ANGELOREYES-afk.github.io.git
-git branch -M main
-git push -u origin main --force
-```
-
-**B — publish alongside it** as a project site at `angeloreyes-afk.github.io/portfolio`:
-create a new repo named `portfolio`, push there, then in the repo's
-**Settings → Pages** set *Source* to `Deploy from a branch`, branch `main`, folder `/ (root)`.
+Published as a project site at `angeloreyes-afk.github.io/portfolio`. Create an empty
+repo named `portfolio` (no README), then:
 
 ```bash
 git remote add origin https://github.com/ANGELOREYES-afk/portfolio.git
