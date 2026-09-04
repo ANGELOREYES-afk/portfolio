@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DIELECTRA — Multi-Sensor Plant Chemistry PCB — Angelo Reyes</title>
+<meta name="description" content="A capacitance-based system for plant health monitoring via dielectric spectroscopy — custom PCB integrating AD9833 waveform generation, FDC2214 and MPR121 capacitive sensing, and AS7263 NIR spectral measurement.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+<link rel="stylesheet" href="../assets/css/site.css?v=4">
+<script src="../assets/js/site.js?v=4"></script>
+<style>
+  .dgm { width: 100%; height: auto; }
+  .dgm .box   { fill: var(--bg-raised); stroke: var(--line); stroke-width: 1.4; }
+  .dgm .boxa  { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.4; }
+  .dgm .leaf  { fill: var(--ok); opacity: .16; stroke: var(--ok); stroke-width: 1.3; }
+  .dgm .sig   { stroke: var(--accent); stroke-width: 1.5; fill: none; }
+  .dgm .ret   { stroke: var(--ok); stroke-width: 1.5; fill: none; stroke-dasharray: 4 3; }
+  .dgm text   { font-family: var(--mono); font-size: 10px; fill: var(--ink-mid); }
+  .dgm text.t { font-size: 11px; fill: var(--ink); }
+  .dgm text.a { fill: var(--accent); }
+  .dgm text.o { fill: var(--ok); }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__in">
+    <a class="topbar__name" href="../index.html"><b>ANGELO REYES</b> <span>/ EE</span></a>
+    <nav>
+      <a href="../index.html#work">Work</a>
+      <a href="baja-daq.html">Baja DAQ</a>
+      <a class="opt" href="scata-arm.html">SCATA</a>
+      <a class="opt" href="orp-sensor.html">ORP</a>
+      <button class="themebtn" data-theme-toggle type="button">auto</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<div class="arthead">
+  <div class="wrap">
+    <a class="crumb" href="../index.html#work">← All work</a>
+    <h1>DIELECTRA</h1>
+    <p class="sub">
+      A capacitance-based system for plant health monitoring via dielectric spectroscopy —
+      a custom PCB that sweeps a plant leaf with an AC waveform and reads back what the
+      tissue's dielectric response says about its chemistry.
+    </p>
+    <div class="tags">
+      <span>KiCad</span><span>AD9833</span><span>FDC2214</span><span>MPR121</span>
+      <span>AS7263</span><span>Arduino Nano 33 IoT</span>
+    </div>
+  </div>
+</div>
+
+<article class="article">
+  <div class="wrap">
+
+    <dl class="glance">
+      <div><dt>Premise</dt><dd>Stop optimising for <b>more</b> plants and start measuring the <b>quality of each individual plant</b></dd></div>
+      <div><dt>Method</dt><dd>Dielectric spectroscopy — sweep frequency across leaf tissue, read capacitance and conductivity, infer ion content</dd></div>
+      <div><dt>My scope</dt><dd>The <b>PCB</b>: sensor front ends, waveform generation, onboard regulation, layout</dd></div>
+      <div><dt>Team</dt><dd>With <b>Lakshay Yadav</b> and <b>John Teerman</b> · began as a science fair project, still ongoing</dd></div>
+      <div><dt>Status</dt><dd>Prototypes calibrated · early findings · <b>results are preliminary, not validated</b></dd></div>
+    </dl>
+
+    <div class="callout plain">
+      <h4>Credit where it belongs</h4>
+      <p>
+        This is a <strong>three-person project</strong> with Lakshay Yadav and John Teerman.
+        The electronics described below — sensor selection, the board, and the front ends —
+        are the part I owned. The experimental design, plant science, and analysis were shared
+        work.
+      </p>
+    </div>
+
+    <!-- ============ 1 ============ -->
+    <h2>1 — Why dielectric response says anything about a plant</h2>
+
+    <p>
+      A leaf is mostly water with dissolved ions in it. Water is strongly polar, so it responds
+      to an applied electric field — and how strongly it responds depends on what is dissolved
+      in it. Measure that response and you are measuring, indirectly, the ionic content of the
+      tissue.
+    </p>
+
+    <ul class="tight">
+      <li><strong>Capacitance tracks water content and ion concentration.</strong> More free polar molecules means more charge stored for the same applied voltage.</li>
+      <li><strong>The response is frequency-dependent</strong>, which is the whole point. Different molecular species relax at different rates, so sweeping frequency separates contributions that a single-frequency measurement blends together.</li>
+      <li><strong>It is non-destructive.</strong> Conventional nutrient assay means taking tissue away and running chemistry on it. A dielectric measurement leaves the plant growing, so the same plant can be measured repeatedly over time.</li>
+    </ul>
+
+    <figure>
+      <svg class="dgm" viewBox="0 0 640 250" role="img" aria-labelledby="sigTitle sigDesc">
+        <title id="sigTitle">Signal chain from waveform generator through leaf to sensors</title>
+        <desc id="sigDesc">An AD9833 direct digital synthesiser generates a swept sine wave that is applied across leaf tissue. The tissue's dielectric response is read back by an FDC2214 capacitance to digital converter and an MPR121 multi-electrode sensor, while an AS7263 measures reflected near-infrared light. All three feed an Arduino Nano 33 IoT, which logs the combined measurement.</desc>
+
+        <rect class="boxa" x="14" y="96" width="104" height="52" rx="4"/>
+        <text class="t" x="66" y="118" text-anchor="middle">AD9833</text>
+        <text x="66" y="134" text-anchor="middle">DDS sweep</text>
+
+        <path class="sig" d="M 118 122 L 176 122" marker-end="url(#a1)"/>
+        <text class="a" x="147" y="112" text-anchor="middle">AC</text>
+
+        <ellipse class="leaf" cx="228" cy="122" rx="50" ry="42"/>
+        <text class="t" x="228" y="118" text-anchor="middle">leaf</text>
+        <text x="228" y="132" text-anchor="middle">tissue</text>
+
+        <path class="ret" d="M 278 122 L 336 122" marker-end="url(#a2)"/>
+        <text class="o" x="300" y="108" text-anchor="middle">response</text>
+
+        <rect class="box" x="336" y="26" width="128" height="44" rx="4"/>
+        <text class="t" x="400" y="44" text-anchor="middle">FDC2214</text>
+        <text x="400" y="59" text-anchor="middle">LC capacitance</text>
+
+        <rect class="box" x="336" y="100" width="128" height="44" rx="4"/>
+        <text class="t" x="400" y="118" text-anchor="middle">MPR121</text>
+        <text x="400" y="133" text-anchor="middle">12-electrode cap</text>
+
+        <rect class="box" x="336" y="174" width="128" height="44" rx="4"/>
+        <text class="t" x="400" y="192" text-anchor="middle">AS7263</text>
+        <text x="400" y="207" text-anchor="middle">NIR spectral</text>
+
+        <path class="ret" d="M 336 122 L 320 122 L 320 48 L 336 48"/>
+        <path class="ret" d="M 320 122 L 320 196 L 336 196"/>
+
+        <path class="sig" d="M 464 48 L 500 48 L 500 122 L 528 122" marker-end="url(#a1)"/>
+        <path class="sig" d="M 464 122 L 528 122"/>
+        <path class="sig" d="M 464 196 L 500 196 L 500 122"/>
+
+        <rect class="box" x="528" y="96" width="100" height="52" rx="4"/>
+        <text class="t" x="578" y="118" text-anchor="middle">Nano 33</text>
+        <text x="578" y="134" text-anchor="middle">log + BLE</text>
+
+        <defs>
+          <marker id="a1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" style="fill:var(--accent)"/>
+          </marker>
+          <marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" style="fill:var(--ok)"/>
+          </marker>
+        </defs>
+      </svg>
+      <figcaption>
+        <b>Figure 1.</b> The measurement chain. The AD9833 drives the tissue; three sensors read
+        different aspects of what comes back, and the disagreement between capacitive and
+        spectral channels is itself informative.
+      </figcaption>
+    </figure>
+
+    <!-- ============ 2 ============ -->
+    <h2>2 — The board</h2>
+
+    <figure>
+      <img src="../assets/img/plant-device.jpg" alt="A hand holding a small custom green PCB with an Arduino Nano 33 IoT soldered on, beside a foam cylinder wrapped in plastic with copper wire coiled around it.">
+      <figcaption>
+        <b>Figure 2.</b> The board with an Arduino Nano 33 IoT carrier, alongside the coil
+        element — copper wound around the sample medium. The coil is the inductor half of the
+        LC tank the FDC2214 measures against.
+      </figcaption>
+    </figure>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Part</th><th>Job</th><th>Why this one</th></tr></thead>
+        <tbody>
+          <tr><td><strong>AD9833</strong></td><td>Waveform generation</td><td>Direct digital synthesis gives a programmable, repeatable frequency sweep — the independent variable the whole experiment turns on. A fixed oscillator would collapse the study to a single point.</td></tr>
+          <tr><td><strong>FDC2214</strong></td><td>Capacitance to digital</td><td>LC-based, 28-bit, sensitive to small near-proximity changes. Measures the tank the coil forms with the sample rather than requiring electrode contact.</td></tr>
+          <tr><td><strong>MPR121</strong></td><td>Multi-electrode capacitance</td><td>12 channels of contact-mode sensing — spatial coverage across a leaf instead of one reading per sample.</td></tr>
+          <tr><td><strong>AS7263</strong></td><td>NIR spectral</td><td>Six-channel near-infrared. An optical measurement of the same tissue, independent of the electrical path.</td></tr>
+          <tr><td>Nano 33 IoT</td><td>Acquisition</td><td>I²C for every sensor on one bus, plus wireless off-board so a logging laptop isn't tethered to the plant.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <ul class="tight">
+      <li><strong>Two capacitive methods, deliberately.</strong> The FDC2214 is near-proximity and LC-dependent; the MPR121 is direct multi-electrode. They fail differently, so agreement between them is worth more than either alone.</li>
+      <li><strong>Onboard voltage regulation</strong> so the analog front ends do not ride the same rail as the digital switching — the same reasoning as the ferrite-isolated VDDA on my <a href="baja-daq.html">CAN node</a>, applied to a much smaller board.</li>
+      <li><strong>An optical channel as an independent check.</strong> If the capacitive and NIR channels disagree about the same leaf, that disagreement localises the problem instead of leaving one unverifiable number.</li>
+    </ul>
+
+    <!-- ============ 3 ============ -->
+    <h2>3 — The pulse-waveform hypothesis</h2>
+
+    <div class="callout">
+      <h4>The idea the project is really testing</h4>
+      <p>
+        Beyond passive measurement, we kept a pulse waveform in the system on the theory that
+        <strong>alternating voltage could isolate and agitate specific compounds within the
+        leaf</strong> — driving a response from one species while leaving others comparatively
+        still, and making them separable in the reading.
+      </p>
+      <p>
+        This is a <strong>hypothesis, not a result.</strong> It is the reason the AD9833 is on
+        the board rather than a fixed oscillator: testing it requires arbitrary control over
+        frequency, and that requirement drove the part selection.
+      </p>
+    </div>
+
+    <!-- ============ 4 ============ -->
+    <h2>4 — Testing it on real plants</h2>
+
+    <figure>
+      <img src="../assets/img/plant-microgreens.jpg" alt="Three trays of microgreens on a table: pea shoots in a cardboard box, sunflower greens in a purple tray, and dense red amaranth in a black tray.">
+      <figcaption>
+        <b>Figure 3.</b> The test subjects — pea shoots, sunflower greens, and red amaranth.
+        Microgreens grow fast and uniformly, so a batch gives many near-identical samples and a
+        short enough cycle to repeat a run without waiting on a season.
+      </figcaption>
+    </figure>
+
+    <figure>
+      <img src="../assets/img/plant-bench.jpg" alt="A dark workbench with a red LED ring, a lit dev board, breadboard and battery, and a laptop displaying a scrolling data terminal.">
+      <figcaption>
+        <b>Figure 4.</b> A logging run in progress. The illuminated ring is lighting for the
+        optical channel; the terminal is raw sensor data coming off the board.
+      </figcaption>
+    </figure>
+
+    <h3>What the early data suggested</h3>
+
+    <p>
+      Comparing water samples of differing ionic composition produced measurable differences in
+      dielectric response. The pattern worth naming is not any single reading:
+    </p>
+
+    <ul class="tight">
+      <li><strong>Ion species behaved differently from one another.</strong> Phosphate held comparatively stable readings; nitrate showed significant variability between methods.</li>
+      <li><strong>The two channels disagreed in a structured way.</strong> Most ions read differently through the NIR path than through the capacitive path — which points at molecular interference affecting one method and not the other, rather than at random noise.</li>
+      <li><strong>That disagreement is the finding</strong>, at this stage. It says the two methods are not measuring quite the same thing, which is exactly what needs pinning down before either can be trusted as a calibrated instrument.</li>
+    </ul>
+
+    <div class="callout plain">
+      <h4>How far this actually goes</h4>
+      <p>
+        These are early-stage results from prototype hardware, and we have said so consistently.
+        The measurements are repeatable enough to show structure and <strong>nowhere near
+        validated enough to call a calibrated assay.</strong> What exists is a working
+        instrument and a first pass at what it can distinguish.
+      </p>
+    </div>
+
+    <figure>
+      <img src="../assets/img/plant-poster.jpg" alt="Research poster titled DIELECTRA, a capacitance-based system for plant health monitoring via dielectric spectroscopy, laid on a table showing sections for background, variables, results, analysis and future research.">
+      <figcaption>
+        <b>Figure 5.</b> The project poster — background and rationale, variables, results,
+        analysis, applications, and future research.
+      </figcaption>
+    </figure>
+
+    <!-- ============ takeaways ============ -->
+    <h2>What I took from it</h2>
+
+    <ul class="tight">
+      <li><strong>Part selection follows the experiment, not the other way round.</strong> The AD9833 is there because the hypothesis needs a frequency sweep. Pick a fixed oscillator and you have quietly decided not to test the thing you set out to test.</li>
+      <li><strong>Two imperfect sensors beat one trusted sensor.</strong> Neither capacitive channel is authoritative alone, and the optical channel is independent of both — so their disagreement carries information a single reading never could.</li>
+      <li><strong>Bounding a claim is part of the work.</strong> The interesting result here is structured disagreement between methods, and saying that plainly is more useful than presenting a number the hardware cannot yet support.</li>
+    </ul>
+
+    <nav class="artnav">
+      <a href="orp-sensor.html">← ORP Sensor</a>
+      <a href="../index.html#work">All work →</a>
+    </nav>
+
+  </div>
+</article>
+
+</main>
+
+<footer>
+  <div class="wrap in">
+    <span>Angelo Reyes — Electrical Engineering, Texas A&amp;M University</span>
+    <a href="../index.html">Home</a>
+    <span class="sp">DIELECTRA · with L. Yadav &amp; J. Teerman</span>
+  </div>
+</footer>
+
+</body>
+</html>

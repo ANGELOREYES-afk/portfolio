@@ -99,6 +99,31 @@
       <figcaption><b>Figure 3.</b> The Arduino-stage bench — perfboard front ends and a bench supply, with the flywheel and engine in frame. Everything here exists to answer one question per sensor: does the signal survive the trip to the pin?</figcaption>
     </figure>
 
+    <div class="callout plain">
+      <h4>Aside — the same sensor, on the car</h4>
+      <p>
+        <strong>This one is not the dyno.</strong> It is the hall effect mount for
+        <strong>DAQ harnessing on the 2026 car</strong> — the gearbox-shaft bracket, not the
+        test stand. It sits here because it is the other half of the same problem: the sensor
+        is identical, and only the mount changes between the bench and the vehicle.
+      </p>
+      <p>
+        That is deliberate. The subteam's plan is for the '27 DAQ to be modular enough that
+        moving between the two cars means <strong>swapping sensor mounts, not redesigning the
+        acquisition chain</strong> — which is what makes it possible to collect baseline data
+        off the '26 car and still show quantifiable improvement at competition.
+      </p>
+    </div>
+
+    <figure>
+      <img src="../assets/img/daq-hall-mount-26.jpg" alt="CAD render of a hall effect sensor bracket that clamps around a gearbox shaft housing, with a sensor pocket and mounting holes.">
+      <figcaption>
+        <b>Figure 4.</b> Hall effect mount for the gearbox shaft — <b>2026 car DAQ harness</b>,
+        not the dynamometer. The pocket holds the sensor inside its sensing gap while the clamp
+        takes the load off the sensor body.
+      </figcaption>
+    </figure>
+
     <h3>The inductive pickup — where the scope earned its keep</h3>
 
     <p>
@@ -143,7 +168,7 @@ SENSOR ──[10k]──┬─────┴──────▶ MCU pin
     <figure>
       <img src="../assets/img/dyno-npn-rebuild.jpg" alt="A small perfboard carrying a 2N3904 transistor and two resistors, wired into a breadboard beside a microcontroller, with one lead labelled PRIMARY in marker on blue tape.">
       <figcaption>
-        <b>Figure 4.</b> The rebuilt front end on perfboard — transistor, base resistor, and
+        <b>Figure 5.</b> The rebuilt front end on perfboard — transistor, base resistor, and
         pull-up, with the primary inductive lead taped and labelled. Small enough to be wrong
         cheaply, which is the point of building it here rather than on the PCB.
       </figcaption>
@@ -169,7 +194,7 @@ SENSOR ──[10k]──┬─────┴──────▶ MCU pin
 
     <figure>
       <img src="../assets/img/act-trade-study.jpg" alt="Trade study slide comparing four candidate actuation architectures for the dynamometer brake.">
-      <figcaption><b>Figure 5.</b> The trade study as presented to the subteam.</figcaption>
+      <figcaption><b>Figure 6.</b> The trade study as presented to the subteam.</figcaption>
     </figure>
 
     <div class="tablewrap">
@@ -198,7 +223,7 @@ SENSOR ──[10k]──┬─────┴──────▶ MCU pin
 
     <figure>
       <img src="../assets/img/act-pipeline.jpg" alt="Block diagram: CIM motor into planetary gearbox, flexible coupling, ball screw, push plate, with the governing equation at each stage.">
-      <figcaption><b>Figure 6.</b> Motor torque → gear reduction → ball screw thrust → hydraulic pressure, with the governing relation at each transition.</figcaption>
+      <figcaption><b>Figure 7.</b> Motor torque → gear reduction → ball screw thrust → hydraulic pressure, with the governing relation at each transition.</figcaption>
     </figure>
 
     <h3>Sizing it</h3>
@@ -247,7 +272,7 @@ SENSOR ──[10k]──┬─────┴──────▶ MCU pin
 
     <figure>
       <img src="../assets/img/act-architecture.jpg" alt="Architecture summary slide beside an ANSYS static structural safety factor plot of the push slab, showing a minimum of 1.0229.">
-      <figcaption><b>Figure 7.</b> Architecture summary and the ANSYS safety-factor result on the push slab.</figcaption>
+      <figcaption><b>Figure 8.</b> Architecture summary and the ANSYS safety-factor result on the push slab.</figcaption>
     </figure>
 
     <div class="callout plain">
@@ -268,11 +293,11 @@ SENSOR ──[10k]──┬─────┴──────▶ MCU pin
     <div class="gallery">
       <figure>
         <img src="../assets/img/act-slab-fea.jpg" alt="ANSYS static structural safety factor contour plot of the push slab.">
-        <figcaption><b>Figure 8.</b> Safety-factor contour — the minimum sits at the narrow waist by the upper mounting hole.</figcaption>
+        <figcaption><b>Figure 9.</b> Safety-factor contour — the minimum sits at the narrow waist by the upper mounting hole.</figcaption>
       </figure>
       <figure>
         <img src="../assets/img/act-cad.jpg" alt="CAD assembly of the actuator: motor, planetary gearbox, coupling, ball screw and push plate in their bracket.">
-        <figcaption><b>Figure 9.</b> The assembly in CAD — motor, gearbox, coupling, screw, and push plate in one bracket.</figcaption>
+        <figcaption><b>Figure 10.</b> The assembly in CAD — motor, gearbox, coupling, screw, and push plate in one bracket.</figcaption>
       </figure>
     </div>
 
@@ -288,7 +313,7 @@ SENSOR ──[10k]──┬─────┴──────▶ MCU pin
 
     <figure>
       <img src="../assets/img/act-koors-testing.jpg" alt="The actuator on a bench connected to a Koors40 motor controller and a bench power supply during driver testing.">
-      <figcaption><b>Figure 10.</b> Koors40 driver bring-up — commanding the actuator off a bench supply before it ever saw the dyno.</figcaption>
+      <figcaption><b>Figure 11.</b> Koors40 driver bring-up — commanding the actuator off a bench supply before it ever saw the dyno.</figcaption>
     </figure>
 
     <div class="tablewrap">
@@ -381,7 +406,7 @@ SENSOR ──[10k]──┬─────┴──────▶ MCU pin
     <figure>
       <img src="../assets/img/act-final-setup.jpg" alt="The completed actuator assembly on a workbench: CIM motor, planetary gearbox, flexible coupling and ball screw in a machined bracket, wired to the Koors40 driver and a bench power supply.">
       <figcaption>
-        <b>Figure 11.</b> The assembled actuator driven off the bench — CIM motor, planetary
+        <b>Figure 12.</b> The assembled actuator driven off the bench — CIM motor, planetary
         gearbox, coupling, and ball screw in the bracket, with the Koors40 and supply alongside.
       </figcaption>
     </figure>
