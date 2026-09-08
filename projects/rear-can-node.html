@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rear CAN Node PCB — Angelo Reyes</title>
+<meta name="description" content="A distributed CAN node for Texas A&amp;M Baja SAE 2027 — STM32G431RBTx, native FDCAN, TVS-protected sensor front ends, and a four-layer layout.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+<link rel="stylesheet" href="../assets/css/site.css?v=5">
+<script src="../assets/js/site.js?v=5"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__in">
+    <a class="topbar__name" href="../index.html"><b>ANGELO REYES</b> <span>/ EE</span></a>
+    <nav>
+      <a href="baja-daq.html">← Baja DAQ</a>
+      <a class="opt" href="../index.html#work">Work</a>
+      <a class="opt" href="scata-arm.html">SCATA</a>
+      <button class="themebtn" data-theme-toggle type="button">auto</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<div class="arthead">
+  <div class="wrap">
+    <a class="crumb" href="baja-daq.html">← Vehicle DAQ &amp; Dynamometer Control</a>
+    <h1>Rear CAN Node PCB</h1>
+    <p class="sub">
+      A subsection of the Baja DAQ project — the board that takes the sensor channels proven on
+      the dyno bench and turns them into something that survives a vibrating, muddy chassis.
+    </p>
+    <div class="tags">
+      <span>STM32G431RBTx</span><span>FDCAN</span><span>KiCad</span>
+      <span>TVS protection</span><span>4-layer</span>
+    </div>
+  </div>
+</div>
+
+<article class="article">
+  <div class="wrap">
+
+    <dl class="glance">
+      <div><dt>Job</dt><dd>Acquire engine RPM, CVT secondary RPM, and two rear shock pots; publish to the vehicle CAN bus</dd></div>
+      <div><dt>MCU</dt><dd><b>STM32G431RBTx</b> — native FDCAN, hardware timer capture, FMAC filter accelerator</dd></div>
+      <div><dt>Theme</dt><dd>Every external pin is a way for the vehicle to damage the board. <b>Everything gets clamped.</b></dd></div>
+      <div><dt>Status</dt><dd>Schematic complete through ERC · layout routed · not yet fabricated</dd></div>
+    </dl>
+
+    <figure>
+      <img src="../assets/img/rn-schematic-full.jpg" alt="Full KiCad schematic sheet for the rear CAN node, showing the STM32 block, CAN transceiver, RPM front ends, shock potentiometer inputs and power distribution.">
+      <figcaption><b>Figure 1.</b> The complete sheet — MCU, CAN, RPM front ends, shock inputs, and power, blocked out by function.</figcaption>
+    </figure>
+
+    <!-- ============ 1 ============ -->
+    <h2>1 — The sensor front ends</h2>
+
+    <p>
+      The two RPM channels are the reason this board is interesting. They are both "RPM," and
+      they need <strong>opposite</strong> circuits — because one arrives analog and one arrives
+      already digital.
+    </p>
+
+    <figure>
+      <img src="../assets/img/rn-rpm-frontends.jpg" alt="Schematic detail: the primary inductive channel with a 100k/47k divider, two Schottky clamp diodes and a 9.3 V TVS; the secondary hall channel with a 4.7k pull-up to 3.3 V and an 18.3 V TVS.">
+      <figcaption>
+        <b>Figure 2.</b> Left, the <b>primary inductive</b> channel: 100 k / 47 k divider,
+        Schottky diodes clamping to the 3.3 V rail and ground, and a 9.3 V TVS at the connector.
+        Right, the <b>secondary hall</b> channel: sensor on 5 V, signal pulled up through 4.7 kΩ
+        to 3.3 V, with an 18.3 V TVS to ground.
+      </figcaption>
+    </figure>
+
+    <div class="ba">
+      <div class="b1">
+        <h5>Primary — analog in, digital out</h5>
+        <p>
+          A variable-reluctance pickup swings bipolar and its amplitude rises with engine speed,
+          so there is no fixed logic level to read. The divider scales it, the Schottky pair
+          clamps whatever survives to within a diode drop of the rails, and the TVS takes the
+          transient the divider is too slow for.
+        </p>
+      </div>
+      <div class="b2">
+        <h5>Secondary — digital in, digital out</h5>
+        <p>
+          The hall sensor is open-collector: it can pull the line down but never up. One pull-up
+          resistor is the entire signal conditioning, and its rail — not the sensor's 5 V supply
+          — sets the logic-high level the MCU sees.
+        </p>
+      </div>
+    </div>
+
+    <div class="callout plain">
+      <h4>Bench fix vs. board fix</h4>
+      <p>
+        On the Arduino bench the inductive channel was rebuilt around a <strong>2N3904 used as a
+        switch</strong>, because the divider there collapsed under the sensor's source
+        impedance. This board keeps a <strong>divider</strong>, with Schottky and TVS clamping
+        added around it. Those are two different answers to the same problem, and which one is
+        correct depends on load: worth confirming against the sensor on the bench before this
+        revision is fabricated.
+      </p>
+    </div>
+
+    <figure>
+      <img src="../assets/img/rn-shockpots.jpg" alt="Schematic detail of the shock potentiometer inputs with their connectors, wiper nets and supply.">
+      <figcaption>
+        <b>Figure 3.</b> Shock potentiometer inputs. These stay <b>analog all the way to the
+        ADC</b> — a pot is a ratiometric divider, so its reading tracks the supply rail, which is
+        why the analog rail's cleanliness is the measurement's accuracy.
+      </figcaption>
+    </figure>
+
+    <!-- ============ 2 ============ -->
+    <h2>2 — Protection, everywhere</h2>
+
+    <p>
+      A test bench is a forgiving place. A car is not: every wire leaving this board is a long
+      antenna running past an ignition system, and every connector is a path for a transient
+      that the MCU will not survive.
+    </p>
+
+    <figure>
+      <img src="../assets/img/rn-tvs-rails.jpg" alt="Schematic detail showing TVS diodes placed on each power rail for protection.">
+      <figcaption><b>Figure 4.</b> TVS diodes on every rail. They idle as open circuits and conduct hard above their standoff voltage, so a spike is shunted to ground instead of reaching the regulator or the MCU.</figcaption>
+    </figure>
+
+    <figure>
+      <img src="../assets/img/rn-can.jpg" alt="Schematic detail of the CAN section: transceiver, dual TVS diode across CANH and CANL, and a jumper for the bus termination resistor.">
+      <figcaption>
+        <b>Figure 5.</b> The CAN section — a dual TVS across CANH/CANL, and a
+        <b>jumper for the 120 Ω termination</b>. Termination belongs only at the two physical
+        ends of the bus, and which node is an end depends on how the car is wired that week, so
+        it is a jumper rather than a fixed resistor.
+      </figcaption>
+    </figure>
+
+    <figure>
+      <img src="../assets/img/rn-leds.jpg" alt="Schematic detail showing indicator LEDs on each power rail.">
+      <figcaption>
+        <b>Figure 6.</b> An LED per rail. Cheap, and it turns "the node is dead" into "the 5 V
+        rail is dead" without unpacking a multimeter in a paddock.
+      </figcaption>
+    </figure>
+
+    <!-- ============ 3 ============ -->
+    <h2>3 — MCU and layout</h2>
+
+    <figure>
+      <img src="../assets/img/rn-mcu.jpg" alt="Schematic detail of the STM32G431RBTx with its decoupling capacitors, crystal, SWD header and ferrite-isolated analog supply.">
+      <figcaption>
+        <b>Figure 7.</b> The MCU block — 100 nF per supply pin, 10 µF bulk, an 8 MHz crystal,
+        SWD header, and the <b>600 Ω @ 100 MHz ferrite</b> splitting VDDA off the digital rail
+        with 1 µF ∥ 10 nF behind it.
+      </figcaption>
+    </figure>
+
+    <div class="gallery">
+      <figure>
+        <img src="../assets/img/rn-layout.jpg" alt="PCB layout with all copper layers visible, showing routed traces, pours and component placement.">
+        <figcaption><b>Figure 8.</b> The routed board, all layers.</figcaption>
+      </figure>
+      <figure>
+        <img src="../assets/img/rn-layout-signal.jpg" alt="The same PCB layout with the power and ground planes hidden, leaving only signal routing visible.">
+        <figcaption><b>Figure 9.</b> The same board with power and ground planes hidden — the view that actually shows whether signal routing is sane.</figcaption>
+      </figure>
+    </div>
+
+    <ul class="tight">
+      <li><strong>Hiding the planes is the useful view.</strong> With the pours on, everything looks connected. With them off you can see which traces take a long way round, and which analog runs sit next to something switching.</li>
+      <li><strong>Decoupling placement is the requirement</strong>, not the schematic. Each cap has to sit within a few millimetres of its pin, or the bond-wire inductance it exists to cancel wins anyway.</li>
+      <li><strong>Connectors are a pigtail.</strong> Deutsch DT is wire-to-wire only with no PCB footprint, so the board carries Molex Micro-Fit 3.0 with mounting pegs and the DT lives on the harness — the pegs putting vibration load into the board rather than the solder joints.</li>
+    </ul>
+
+    <div class="callout plain">
+      <h4>One open discrepancy</h4>
+      <p>
+        The schematic carries an <strong>SN65HVD230</strong> transceiver; the ordering sheet has
+        <strong>TJA1051T/3</strong> marked as ordered. They are pin-compatible in the common
+        SOIC-8 arrangement but not identical — the SN65HVD230 has a slope-control pin where the
+        TJA1051 has a mode input. Worth reconciling before fabrication.
+      </p>
+    </div>
+
+    <nav class="artnav">
+      <a href="baja-daq.html">← Back to Vehicle DAQ</a>
+      <a href="../index.html#work">All work →</a>
+    </nav>
+
+  </div>
+</article>
+
+</main>
+
+<footer>
+  <div class="wrap in">
+    <span>Angelo Reyes — Electrical Engineering, Texas A&amp;M University</span>
+    <a href="../index.html">Home</a>
+    <span class="sp">Rear CAN node · Baja SAE 2027</span>
+  </div>
+</footer>
+
+</body>
+</html>
