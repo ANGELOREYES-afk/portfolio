@@ -1,0 +1,157 @@
+%==============================================================================
+%  Angelo Reyes — Resume  (Baja SAE weighted)
+%  Compile: pdflatex Angelo_Reyes_Resume.tex
+%  Single page. ATS-friendly: real text, no tables for layout, no images.
+%==============================================================================
+\documentclass[letterpaper,9pt]{extarticle}
+
+\usepackage[empty]{fullpage}
+\usepackage[hidelinks]{hyperref}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{tabularx}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% ---------- page geometry ----------
+\addtolength{\oddsidemargin}{-0.62in}
+\addtolength{\evensidemargin}{-0.62in}
+\addtolength{\textwidth}{1.24in}
+\addtolength{\topmargin}{-1.0in}
+\addtolength{\textheight}{2.0in}
+
+\urlstyle{same}
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+\pagestyle{empty}
+
+% ---------- section styling ----------
+\titleformat{\section}{\vspace{-4pt}\scshape\raggedright\large}
+  {}{0em}{}[\titlerule \vspace{-5pt}]
+
+% ---------- helper macros ----------
+\newcommand{\resumeItem}[1]{\item\small{#1 \vspace{-2pt}}}
+
+\newcommand{\resumeSubheading}[4]{%
+  \vspace{-1pt}\item
+  \begin{tabular*}{0.98\textwidth}[t]{l@{\extracolsep{\fill}}r}
+    \textbf{#1} & #2 \\
+    \textit{\small#3} & \textit{\small #4} \\
+  \end{tabular*}\vspace{-6pt}
+}
+
+% project heading: title (bold) + stack (italic) on one line, dates right
+\newcommand{\resumeProject}[3]{%
+  \vspace{1pt}\item
+  \begin{tabular*}{0.98\textwidth}[t]{l@{\extracolsep{\fill}}r}
+    \textbf{#1} & #3 \\
+    \textit{\small#2} & \\
+  \end{tabular*}\vspace{-6pt}
+}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.14in,label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=0.16in,topsep=1pt,itemsep=0.6pt,parsep=0pt]}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-3pt}}
+
+%==============================================================================
+\begin{document}
+
+% ---------------- HEADING ----------------
+\begin{center}
+  {\Huge \scshape Angelo Reyes} \\ \vspace{3pt}
+  \small Houston, TX $|$ 281-832-0459 $|$
+  \href{mailto:angelohenaoreyes@yahoo.com}{angelohenaoreyes@yahoo.com} \\
+  \href{https://linkedin.com/in/angelo-reyes}{linkedin.com/in/angelo-reyes} $|$
+  \href{https://github.com/ANGELOREYES-afk}{github.com/ANGELOREYES-afk} $|$
+  \href{https://angeloreyes-afk.github.io/portfolio/}{angeloreyes-afk.github.io/portfolio}
+\end{center}
+\vspace{-6pt}
+
+% ---------------- EDUCATION ----------------
+\section{Education}
+\resumeSubHeadingListStart
+  \resumeSubheading
+    {Texas A\&M University}{Expected May 2029}
+    {B.S. Electrical Engineering \quad$\cdot$\quad GPA 3.66}{College Station, TX}
+\resumeSubHeadingListEnd
+
+% ---------------- EXPERIENCE ----------------
+\section{Experience}
+\resumeSubHeadingListStart
+
+  \resumeSubheading
+    {Controls \& Data Acquisition Engineer}{Mar 2026 -- Present}
+    {Texas A\&M Baja SAE 2027 --- Controls / DAQ Subteam}{College Station, TX}
+  \resumeItemListStart
+    \resumeItem{Own sensor selection, signal conditioning, firmware, and PCB design for a \textbf{14-sensor, 12\,V distributed CAN network} on a single-seat off-road race car competing against \textasciitilde100 university teams.}
+    \resumeItem{Classified every acquisition channel by \textbf{signal type} to drive front-end design: an inductive RPM pickup returns \textbf{analog AC} whose amplitude scales with shaft speed, a Hall effect sensor (GS100502) returns an \textbf{already-digital open-collector} square wave, and a 1000\,kg load cell returns \textbf{analog differential} mV/V --- three channels needing three different circuits.}
+    \resumeItem{Built dynamometer test firmware on ESP32-C3 --- interrupt-driven period capture with \texttt{IRAM\_ATTR} handlers, HX711 24-bit load cell with EMA filtering, hardware LEDC PWM --- with \textbf{fail-safe detection commanding neutral on stale sensor data} on a rig capable of over 3{,}600\,lbf.}
+    \resumeItem{Specified harness and connector architecture to an \textbf{IP67} standard: Deutsch DT for sealed, positively-latched, field-serviceable runs; Molex Micro-Fit 3.0 board-mount pigtails with pegs transferring vibration load into the board rather than solder joints. Produced pinout and wire-gauge mapping.}
+    \resumeItem{Drove \textbf{scope reduction} after design review: re-sorted the sensor list with Powertrain, cutting instrumentation nobody would consume and adding a time-of-flight sheave sensor that closed a real gap --- \textbf{CVT belt slip}, previously indistinguishable from a legitimate ratio change.}
+  \resumeItemListEnd
+
+  \resumeSubheading
+    {Hardware Security Research Assistant}{Nov 2025 -- Jun 2026}
+    {Texas A\&M University}{College Station, TX}
+  \resumeItemListStart
+    \resumeItem{Tuned CPU architecture for zero-knowledge proof protocols across NTT, MSM, hash, and sum-check algorithms alongside FPGA/VLSI design; implemented NIST FIPS post-quantum lattice cryptography with learning-with-errors key encapsulation.}
+  \resumeItemListEnd
+
+  \resumeSubheading
+    {Technical Lead --- ThinkTank TAMU}{Aug 2025 -- May 2026}
+    {AIAA Undergraduate Space Mission Design Challenge}{College Station, TX}
+  \resumeItemListStart
+    \resumeItem{Designed CubeSat telemetry, solar weather monitoring, and communication subsystems, including heliocentric orbits holding a link across black-shadow periods in the Mars--Earth line; led concept of operations and trade studies.}
+  \resumeItemListEnd
+
+\resumeSubHeadingListEnd
+
+% ---------------- BAJA SAE PROJECTS ----------------
+\section{Baja SAE Engineering Projects}
+\resumeSubHeadingListStart
+
+  \resumeProject
+    {Engine Dynamometer Brake Actuator}
+    {Trade study $\cdot$ force transmission analysis $\cdot$ ANSYS FEA $\cdot$ ESP32-C3 $\cdot$ PID}
+    {2026}
+  \resumeItemListStart
+    \resumeItem{Selected a slab ball-screw architecture over three alternatives on a \textbf{control} argument, not a mechanical one: a lever arm's mechanical advantage varies with stroke position, so a single set of PID gains cannot be correct across its range. Linear actuation makes the plant behave identically everywhere.}
+    \resumeItem{Sized the transmission to the \textbf{controller's} 40\,A continuous limit rather than the motor's 133\,A stall --- the real operating point is set by whichever component gives out first. Delivered \textbf{16{,}342\,N (3{,}674\,lbf)} at a 20:1 reduction through an SFU1204 4\,mm-lead screw, \textbf{3.7$\times$} the 1{,}000\,lbf operational target and inside the screw's 5{,}000\,lbf axial rating.}
+    \resumeItem{Caught a lead-screw error that had propagated silently through the entire force chain: a 4\,mm lead recorded as 5\,mm understated every force by \textbf{25\%} and overstated linear speed by \textbf{20\%}, since lead sits in the denominator of the governing equation. Re-derived and re-typeset the analysis.}
+    \resumeItem{Ran ANSYS Static Structural FEA on the load-bearing push slab and reported the resulting \textbf{FOS of 1.02} openly at design review --- a stress concentration at a narrow waist rather than a material inadequacy --- revising the geometry toward a 1.25 target.}
+  \resumeItemListEnd
+
+  \resumeProject
+    {Rear CAN Node PCB}
+    {KiCad $\cdot$ STM32G431RBTx $\cdot$ FDCAN $\cdot$ signal integrity $\cdot$ transient protection}
+    {2026}
+  \resumeItemListStart
+    \resumeItem{Designed a complete schematic through ERC for a distributed CAN node acquiring engine RPM, CVT secondary RPM, and rear shock potentiometers; selected the STM32G431RBTx against a weighted decision matrix for native FDCAN, hardware timer capture removing ISR jitter, and an FMAC accelerator offloading analog filtering.}
+    \resumeItem{\textbf{Rebuilt the inductive RPM front end after bench testing invalidated the design.} A 147\,k$\Omega$ divider drawing only 82\,\textmu A still collapsed the sensor to 2.4\,V, below the logic threshold. Replaced attenuation with a \textbf{2N3904 used as a switch}, regenerating logic level from board supply on \textasciitilde0.38\,mA of base current so the sensor's 12\,V never reaches the MCU.}
+    \resumeItem{Engineered power and analog signal integrity: a \textbf{600\,$\Omega$ at 100\,MHz ferrite} isolating VDDA --- chosen over an inductor, which would resonate with the decoupling network --- parallel 1\,\textmu F / 10\,nF bypass covering bulk and low-ESL response, and per-supply-pin 100\,nF sized against bond-wire inductance.}
+    \resumeItem{Specified transient protection on every externally exposed pin --- TVS diodes across all power rails, both RPM inputs, and the CAN pair --- plus \textbf{jumper-selectable 120\,$\Omega$ bus termination}, since which node sits at a physical end of the bus changes with vehicle wiring.}
+  \resumeItemListEnd
+
+\resumeSubHeadingListEnd
+
+% ---------------- ADDITIONAL PROJECTS ----------------
+\section{Additional Projects}
+\begin{itemize}[leftmargin=0.16in,topsep=2pt,itemsep=1.5pt,parsep=0pt]
+  \resumeItem{\textbf{Liquid-Cooled Robotic Manipulator} (2025--Present) --- Independent research build attacking the thermal ceiling on actuator torque density. Designed and manufactured a PCB implementing \textbf{Field-Oriented Control} of frameless BLDC phase windings, with a soft limiter tapering commanded current against a live winding-temperature estimate rather than tripping a hard cutoff.}
+  \resumeItem{\textbf{Sensor and instrumentation builds} --- PCB for a capacitance-based plant health monitor (AD9833 sweep, FDC2214/MPR121 capacitive front ends, AS7263 NIR cross-check; three-person team); an ORP salinity instrument built as a galvanic cell from scratch (Ag/AgCl reference in KCl vs.\ inert platinum, hand-cast agar salt bridge, \textbf{250--5000\,ppm}); and an iOS pixel grid bit-packed at \textbf{one bit per pixel} to fit BLE's \textasciitilde20-byte payload, an 8$\times$ reduction.}
+\end{itemize}\vspace{-3pt}
+
+% ---------------- SKILLS ----------------
+\section{Technical Skills}
+\begin{itemize}[leftmargin=0.14in,label={},topsep=1pt]
+  \small{\item{
+    \textbf{Hardware \& PCB}{: KiCad capture and ERC, decoupling and power distribution strategy, ferrite analog supply isolation, TVS transient protection, open-collector and level-shifted sensor front ends, CAN transceiver and bus termination, STM32 pin planning, Deutsch DT / Molex Micro-Fit harness design to IP67} \\
+    \textbf{Embedded \& Controls}{: C++ bare-metal and Arduino, ISRs with IRAM placement, hardware timer input capture, LEDC PWM, 24-bit ADC interfacing, digital filtering, fault detection, CAN / FDCAN, PID with feedforward, Field-Oriented Control, latency budgeting, fail-safe state design} \\
+    \textbf{Analysis \& Tools}{: ANSYS Static Structural FEA, force transmission modeling, weighted decision matrices, DAQ methodology, test plan development $\cdot$ C++, Python, Verilog, Swift, Git/GitHub, LaTeX, STM32CubeIDE, Onshape, SolidWorks}
+  }}
+\end{itemize}
+
+\end{document}

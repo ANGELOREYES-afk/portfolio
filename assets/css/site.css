@@ -434,3 +434,13 @@ footer .sp { margin-left: auto; font-family: var(--mono); font-size: 0.74rem; }
   background: none; border: 0; padding: 0; margin-bottom: 0.4rem;
 }
 .rxn p { margin: 0; font-size: 0.84rem; color: var(--ink-mid); max-width: none; }
+
+/* résumé download — topbar action */
+.topbar nav a.resume {
+  font-family: var(--mono); font-size: 0.74rem;
+  border: 1px solid var(--accent); color: var(--accent);
+  border-radius: var(--r); padding: 0.25rem 0.6rem;
+  white-space: nowrap; line-height: 1.5;
+}
+.topbar nav a.resume:hover { background: var(--accent-soft); color: var(--accent); }
+@media (max-width: 560px) { .topbar nav a.resume { display: none; } }
