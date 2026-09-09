@@ -6,8 +6,8 @@
 <title>Vehicle DAQ &amp; Dynamometer Control — Angelo Reyes</title>
 <meta name="description" content="Instrumenting an engine dynamometer and designing its brake actuator for Texas A&amp;M Baja SAE 2027 — sensor bring-up, trade studies, FEA, and a distributed CAN node.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
-<link rel="stylesheet" href="../assets/css/site.css?v=6">
-<script src="../assets/js/site.js?v=6"></script>
+<link rel="stylesheet" href="../assets/css/site.css?v=7">
+<script src="../assets/js/site.js?v=7"></script>
 </head>
 <body>
 
@@ -62,9 +62,21 @@
     <div class="stats">
       <div class="stat"><b>16,342 N</b><span>Force at 40 A</span></div>
       <div class="stat"><b>3.7×</b><span>Margin vs. target</span></div>
-      <div class="stat"><b>14</b><span>Sensors in scope</span></div>
+      <a class="stat" href="#network"><b>14</b><span>Sensors in scope →</span></a>
       <div class="stat"><b>5</b><span>Trade studies</span></div>
     </div>
+
+    <figure id="network">
+      <img src="../assets/img/daq-can-architecture.jpg" alt="Two side-by-side block diagrams of the vehicle DAQ network. Both show a front CAN node with corner shock potentiometers and a pedal box, a central CAN node carrying the primary DAQ with MCU, ADC channels, SD logging, GPS and a nine-axis IMU, and a rear CAN node with corner sensors and powertrain instrumentation. The critical scope on the left is the minimum viable sensor set; the expanded scope on the right adds wheel RPM at every corner, belt temperature, a native USB service interface, and a LoRA telemetry link.">
+      <figcaption>
+        <b>Figure 1.</b> The network the 14 sensors live on — three CAN nodes around a central
+        DAQ. <b>Left, critical scope:</b> the minimum set that has to work. <b>Right, expanded
+        scope:</b> wheel RPM at every corner, belt temperature, a USB service interface, and a
+        LoRA downlink. Splitting the two is what made the scope conversation concrete — the
+        left-hand diagram is a commitment, the right-hand one is a wish list until each sensor
+        has someone who will consume its data.
+      </figcaption>
+    </figure>
 
     <!-- ============ 1 ============ -->
     <h2>1 — Instrumenting the dyno</h2>
@@ -77,12 +89,12 @@
 
     <figure>
       <img src="../assets/img/dyno-hall-pickup.jpg" alt="Hall effect sensor brackets mounted on the dynamometer shaft, with signal wiring running back through lever-nut connectors to the DAQ.">
-      <figcaption><b>Figure 1.</b> Hall pickups mounted to the dyno shaft. The bracket has to hold the sensor inside its sensing gap while the shaft runs — mounting was as much of the problem as sensing.</figcaption>
+      <figcaption><b>Figure 2.</b> Hall pickups mounted to the dyno shaft. The bracket has to hold the sensor inside its sensing gap while the shaft runs — mounting was as much of the problem as sensing.</figcaption>
     </figure>
 
     <figure>
       <img src="../assets/img/dyno-daq-bench.jpg" alt="Dynamometer sensor bench: Arduino board, bench power supply, and wiring harness laid out on a work table beside the flywheel and engine.">
-      <figcaption><b>Figure 2.</b> The Arduino-stage bench — perfboard front ends and a bench supply, with the flywheel and engine in frame. Everything here exists to answer one question per sensor: does the signal survive the trip to the pin?</figcaption>
+      <figcaption><b>Figure 3.</b> The Arduino-stage bench — perfboard front ends and a bench supply, with the flywheel and engine in frame. Everything here exists to answer one question per sensor: does the signal survive the trip to the pin?</figcaption>
     </figure>
 
     <h3>What kind of signal each sensor actually sends</h3>
@@ -174,7 +186,7 @@
     <figure>
       <img src="../assets/img/daq-hall-mount-26.jpg" alt="CAD render of a hall effect sensor bracket that clamps around a gearbox shaft housing, with a sensor pocket and mounting holes.">
       <figcaption>
-        <b>Figure 3.</b> Hall effect mount for the gearbox shaft — <b>2026 car DAQ harness</b>,
+        <b>Figure 4.</b> Hall effect mount for the gearbox shaft — <b>2026 car DAQ harness</b>,
         not the dynamometer. The pocket holds the sensor inside its sensing gap while the clamp
         takes the load off the sensor body.
       </figcaption>
@@ -213,7 +225,7 @@
 <figure>
       <img src="../assets/img/dyno-bench-wiring.jpg" alt="Hand-drawn bench wiring diagram: a 12 V supply feeding two hall effect sensors with 4.7k pull-up resistors to the Arduino's 5 V rail, and an inductive sensor driving an NPN transistor base through a 10k resistor with the collector pulled up to 5 V.">
       <figcaption>
-        <b>Figure 4.</b> The bench wiring as actually built. Both hall sensors run off the 12 V
+        <b>Figure 5.</b> The bench wiring as actually built. Both hall sensors run off the 12 V
         supply with <b>4.7 kΩ pull-ups to the Arduino's 5 V rail</b>; the inductive sensor drives
         the NPN base through <b>10 kΩ</b>, with the collector pulled up to 5 V and the emitter to
         a shared ground. Everything returns to one ground — which is what makes the levels mean
@@ -224,7 +236,7 @@
     <figure>
       <img src="../assets/img/dyno-npn-rebuild.jpg" alt="A small perfboard carrying a 2N3904 transistor and two resistors, wired into a breadboard beside a microcontroller, with one lead labelled PRIMARY in marker on blue tape.">
       <figcaption>
-        <b>Figure 5.</b> The rebuilt front end on perfboard — transistor, base resistor, and
+        <b>Figure 6.</b> The rebuilt front end on perfboard — transistor, base resistor, and
         pull-up, with the primary inductive lead taped and labelled. Small enough to be wrong
         cheaply, which is the point of building it here rather than on the PCB.
       </figcaption>
@@ -242,7 +254,7 @@
     <figure>
       <img src="../assets/img/dyno-sensor-stack.jpg" alt="The dynamometer sensor set laid out together: hall effect pickups, a load cell, and the inductive sensor with their wiring.">
       <figcaption>
-        <b>Figure 6.</b> The current sensor set — hall pickups, load cell, and the reworked
+        <b>Figure 7.</b> The current sensor set — hall pickups, load cell, and the reworked
         inductive channel, wired together as one harness rather than three separate bring-ups.
         This is where the channels above ended up after the front ends were settled.
       </figcaption>
@@ -261,7 +273,7 @@
 
     <figure>
       <img src="../assets/img/act-trade-study.jpg" alt="Trade study slide comparing four candidate actuation architectures for the dynamometer brake.">
-      <figcaption><b>Figure 7.</b> The trade study as presented to the subteam.</figcaption>
+      <figcaption><b>Figure 8.</b> The trade study as presented to the subteam.</figcaption>
     </figure>
 
     <div class="tablewrap">
@@ -290,20 +302,20 @@
 
     <figure>
       <img src="../assets/img/act-pipeline.jpg" alt="Block diagram: CIM motor into planetary gearbox, flexible coupling, ball screw, push plate, with the governing equation at each stage.">
-      <figcaption><b>Figure 8.</b> Motor torque → gear reduction → ball screw thrust → hydraulic pressure, with the governing relation at each transition.</figcaption>
+      <figcaption><b>Figure 9.</b> Motor torque → gear reduction → ball screw thrust → hydraulic pressure, with the governing relation at each transition.</figcaption>
     </figure>
 
     <h3>Sizing it</h3>
 
     <figure>
       <img src="../assets/img/act-core-eq.jpg" alt="Typeset core equation: piston force equals motor torque times gear ratio times gearbox efficiency times two pi screw efficiency over lead, evaluated with a 4 mm lead to a multiplier of 1201.7.">
-      <figcaption><b>Figure 9.</b> The core equation with the corrected 4 mm lead, giving a multiplier of 1201.7 N per N·m.</figcaption>
+      <figcaption><b>Figure 10.</b> The core equation with the corrected 4 mm lead, giving a multiplier of 1201.7 N per N·m.</figcaption>
     </figure>
 
     <figure>
       <img src="../assets/img/act-force-tables.jpg" alt="Typeset tables: required force at the master cylinder for 300 to 1500 psi, and available force at 40 A for gear ratios 5:1 through 50:1, with 20:1 giving 16342 N or 3674 lbf.">
       <figcaption>
-        <b>Figure 10.</b> Required force at the master cylinder against what the transmission
+        <b>Figure 11.</b> Required force at the master cylinder against what the transmission
         delivers. The 1,500 PSI row — <b>2,047 N</b> — is the requirement every ratio has to clear.
       </figcaption>
     </figure>
@@ -317,7 +329,7 @@
 
     <figure>
       <img src="../assets/img/act-speed.jpg" alt="Typeset speed derivation: 265.5 rpm over 60 times 4 mm gives 17.7 mm per second, so a 25 mm stroke takes 1.41 seconds.">
-      <figcaption><b>Figure 11.</b> The speed the reduction costs, worked from the same 4 mm lead.</figcaption>
+      <figcaption><b>Figure 12.</b> The speed the reduction costs, worked from the same 4 mm lead.</figcaption>
     </figure>
 
     <div class="callout plain">
@@ -336,7 +348,7 @@
 
     <figure>
       <img src="../assets/img/act-architecture.jpg" alt="Architecture summary slide beside an ANSYS static structural safety factor plot of the push slab, showing a minimum of 1.0229.">
-      <figcaption><b>Figure 12.</b> Architecture summary and the ANSYS safety-factor result on the push slab.</figcaption>
+      <figcaption><b>Figure 13.</b> Architecture summary and the ANSYS safety-factor result on the push slab.</figcaption>
     </figure>
 
     <div class="callout plain">
@@ -357,11 +369,11 @@
     <div class="gallery">
       <figure>
         <img src="../assets/img/act-slab-fea.jpg" alt="ANSYS static structural safety factor contour plot of the push slab.">
-        <figcaption><b>Figure 13.</b> Safety-factor contour — the minimum sits at the narrow waist by the upper mounting hole.</figcaption>
+        <figcaption><b>Figure 14.</b> Safety-factor contour — the minimum sits at the narrow waist by the upper mounting hole.</figcaption>
       </figure>
       <figure>
         <img src="../assets/img/act-cad.jpg" alt="CAD assembly of the actuator: motor, planetary gearbox, coupling, ball screw and push plate in their bracket.">
-        <figcaption><b>Figure 14.</b> The assembly in CAD — motor, gearbox, coupling, screw, and push plate in one bracket.</figcaption>
+        <figcaption><b>Figure 15.</b> The assembly in CAD — motor, gearbox, coupling, screw, and push plate in one bracket.</figcaption>
       </figure>
     </div>
 
@@ -377,7 +389,7 @@
 
     <figure>
       <img src="../assets/img/act-koors-testing.jpg" alt="The actuator on a bench connected to a Koors40 motor controller and a bench power supply during driver testing.">
-      <figcaption><b>Figure 15.</b> Koors40 driver bring-up — commanding the actuator off a bench supply before it ever saw the dyno.</figcaption>
+      <figcaption><b>Figure 16.</b> Koors40 driver bring-up — commanding the actuator off a bench supply before it ever saw the dyno.</figcaption>
     </figure>
 
     <div class="tablewrap">
@@ -451,11 +463,11 @@
     <div class="gallery">
       <figure>
         <img src="../assets/img/dyno-moment-arm.jpg" alt="Diagram of the moment arm carrying the load sensor, showing the brake reaction force acting through a known lever length onto the load cell.">
-        <figcaption><b>Figure 16.</b> The moment arm — brake reaction acts through a known lever length onto the load cell, which is what converts a force reading into a torque number.</figcaption>
+        <figcaption><b>Figure 17.</b> The moment arm — brake reaction acts through a known lever length onto the load cell, which is what converts a force reading into a torque number.</figcaption>
       </figure>
       <figure>
         <img src="../assets/img/dyno-pid-tuning.jpg" alt="PID tuning chart showing the effect of increasing proportional, integral and derivative gain on rise time, overshoot, settling time and steady-state error.">
-        <figcaption><b>Figure 17.</b> The tuning reference used while bringing the loop up — which term to reach for depending on whether the problem is rise time, overshoot, or standing error.</figcaption>
+        <figcaption><b>Figure 18.</b> The tuning reference used while bringing the loop up — which term to reach for depending on whether the problem is rise time, overshoot, or standing error.</figcaption>
       </figure>
     </div>
 
@@ -483,7 +495,7 @@
     <figure>
       <img src="../assets/img/act-final-setup.jpg" alt="The completed actuator assembly on a workbench: CIM motor, planetary gearbox, flexible coupling and ball screw in a machined bracket, wired to the Koors40 driver and a bench power supply.">
       <figcaption>
-        <b>Figure 18.</b> The assembled actuator driven off the bench — CIM motor, planetary
+        <b>Figure 19.</b> The assembled actuator driven off the bench — CIM motor, planetary
         gearbox, coupling, and ball screw in the bracket, with the Koors40 and supply alongside.
       </figcaption>
     </figure>
@@ -503,7 +515,7 @@
 
     <figure>
       <img src="../assets/img/rn-layout.jpg" alt="Routed PCB layout of the rear CAN node with all copper layers visible.">
-      <figcaption><b>Figure 19.</b> The routed rear node. <a href="rear-can-node.html">The subsection page</a> covers the front ends, TVS protection, and layout in full.</figcaption>
+      <figcaption><b>Figure 20.</b> The routed rear node. <a href="rear-can-node.html">The subsection page</a> covers the front ends, TVS protection, and layout in full.</figcaption>
     </figure>
 
     <ul class="tight">

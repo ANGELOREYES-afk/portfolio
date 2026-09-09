@@ -444,3 +444,10 @@ footer .sp { margin-left: auto; font-family: var(--mono); font-size: 0.74rem; }
 }
 .topbar nav a.resume:hover { background: var(--accent-soft); color: var(--accent); }
 @media (max-width: 560px) { .topbar nav a.resume { display: none; } }
+
+/* clickable stat tile */
+a.stat { text-decoration: none; color: inherit; transition: background .15s; }
+a.stat:hover { background: var(--accent-soft); color: inherit; }
+a.stat:hover b { color: var(--accent); }
+a.stat:hover span { color: var(--accent); }
+a.stat span { transition: color .15s; }
