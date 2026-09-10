@@ -6,8 +6,8 @@
 <title>Vehicle DAQ &amp; Dynamometer Control — Angelo Reyes</title>
 <meta name="description" content="Instrumenting an engine dynamometer and designing its brake actuator for Texas A&amp;M Baja SAE 2027 — sensor bring-up, trade studies, FEA, and a distributed CAN node.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
-<link rel="stylesheet" href="../assets/css/site.css?v=7">
-<script src="../assets/js/site.js?v=7"></script>
+<link rel="stylesheet" href="../assets/css/site.css?v=8">
+<script src="../assets/js/site.js?v=8"></script>
 </head>
 <body>
 
@@ -100,10 +100,11 @@
     <h3>What kind of signal each sensor actually sends</h3>
 
     <p>
-      This is the distinction that decides the whole front end. Two of these channels look
-      identical on a block diagram — both are "RPM" — but one arrives as
-      <strong>analog</strong> and one as <strong>digital</strong>, and that difference is why
-      they need completely different circuits.
+      This is the distinction that decides the whole front end. Both RPM channels are
+      <strong>open-collector</strong> — they sink current but never source it. What separates
+      them is <strong>voltage domain</strong>: one is referenced to 5 V and can be pulled
+      straight to 3.3 V logic, the other is referenced to <strong>12 V</strong> and needs level
+      translation before it can touch the MCU at all.
     </p>
 
     <div class="tablewrap">
@@ -111,9 +112,9 @@
         <thead><tr><th>Channel</th><th>Part</th><th>Signal out of the sensor</th><th>Conditioning</th><th>Into the MCU as</th></tr></thead>
         <tbody>
           <tr>
-            <td>Primary RPM</td><td>Inductive pickup (AimTech), 12 V</td>
-            <td><strong>Analog AC.</strong> Variable reluctance — a bipolar pulse whose <em>amplitude scales with shaft speed</em>. No fixed logic level to read.</td>
-            <td>Divider + Schottky clamp + TVS on the PCB; NPN switch on the bench</td>
+            <td>Primary RPM</td><td>Inductive spark pickup (AimTech), 12 V</td>
+            <td><strong>Digital, open-collector</strong> — but referenced to <strong>12 V</strong>. It sinks, never sources, and its logic-high sits far above a 3.3 V input's maximum. One pulse per ignition event.</td>
+            <td>2N3904 level translation (bench); divider + Schottky + TVS on the current board revision</td>
             <td><span class="yes">Digital edge</span> → timer input capture</td>
           </tr>
           <tr>
@@ -153,11 +154,11 @@
     <div class="callout">
       <h4>Why the analog/digital split is the whole design</h4>
       <p>
-        The Hall channel is <strong>already digital</strong> — it needs a pull-up and nothing
-        else, because an open-collector output can pull down but cannot pull up. The inductive
-        channel is <strong>analog</strong>, unreferenced, and its amplitude depends on how fast
-        the engine happens to be turning, so it needs to be squared up into a logic level before
-        a timer can count it.
+        Both RPM channels are open-collector, so neither can pull its own line high — a
+        pull-up is doing that job in both cases. The Hall sensor's output is pulled to 3.3 V,
+        so it connects directly. The inductive pickup's is referenced to <strong>12 V</strong>,
+        which is roughly four times the MCU's absolute maximum, so it cannot connect directly
+        no matter how clean the signal is.
       </p>
       <p>
         The load cell is the third case: analog, but so small that conditioning it on the MCU's
@@ -195,30 +196,32 @@
     <h3>The inductive pickup — where the scope earned its keep</h3>
 
     <p>
-      The inductive sensor produces a roughly 12 V bipolar pulse — well past any logic input's
-      absolute maximum, on the 5 V Arduino bench and more so on the 3.3 V STM32 node. The
-      obvious fix is a divider, and I designed a deliberately high-impedance one — 147 kΩ total,
-      drawing only 82 µA — precisely <em>because</em> inductive pickups have high source
-      impedance.
+      The inductive pickup clamps onto the ignition lead and gives one open-collector pulse per
+      spark, referenced to its 12 V supply — well past any logic input's absolute maximum. I
+      treated it as a level problem and designed a deliberately high-impedance divider, 147 kΩ
+      total drawing only 82 µA, on the assumption that a light load would leave the signal
+      intact.
     </p>
 
     <div class="callout">
       <h4>The most instructive failure of the project</h4>
       <p>
-        On the scope it sagged to <strong>2.4 V</strong> — below the logic threshold. The
-        sensor could not source even 82 µA without collapsing. My analysis identified the right
-        parameter and underestimated it by enough to make the circuit non-functional.
+        On the scope the logic-high sagged to <strong>2.4 V</strong> — below threshold. The
+        real problem was <strong>topology, not resistor values</strong>: an open-collector
+        output has nothing of its own to pull the line high, so a divider to ground is the wrong
+        circuit for it no matter how high the impedance. A divider attenuates a signal that is
+        being driven. This one wasn't.
       </p>
     </div>
 
     <div class="ba">
       <div class="b1">
         <h5>Original — attenuate the signal</h5>
-        <p>100k / 47k divider with Schottky clamps. Depends entirely on the sensor being able to drive the divider. It couldn't.</p>
+        <p>100k / 47k divider with Schottky clamps. Assumes the sensor drives its output high. An open-collector stage never does — it only pulls down.</p>
       </div>
       <div class="b2">
         <h5>Rebuild — regenerate the signal</h5>
-        <p>2N3904 as a switch. The sensor no longer has to <em>be</em> the logic level — it only has to sink ~0.38 mA of base current, and the level is regenerated from the board's own 5 V rail. Its 12 V never reaches the MCU.</p>
+        <p>2N3904 as a level translator. The sensor's 12 V open-collector output drives the base through 10 kΩ, and the transistor pulls a 3.3 V-pulled-up MCU pin low. The 12 V domain never touches the MCU.</p>
       </div>
     </div>
 
@@ -244,9 +247,9 @@
 
     <ul class="tight">
       <li><strong>The transistor inverts the signal</strong>, so timer capture triggers on the rising edge — the sensor <em>releasing</em>, not firing.</li>
-      <li><strong>The Hall channel needed the opposite treatment.</strong> It arrives already digital, so it needs no squaring-up at all — just a 4.7 kΩ pull-up, because an open-collector output can pull <em>down</em> but never up. The pull-up rail alone sets the logic-high level: 5 V on the Arduino bench, 3.3 V on the STM32 node, with no level shifting either way.</li>
+      <li><strong>The Hall channel is the same output type with an easier voltage domain.</strong> Also open-collector, also needs a pull-up — but its supply is 5 V and the pull-up goes to logic level directly (5 V on the Arduino bench, 3.3 V on the STM32 node), so no translation stage is needed.</li>
       <li><strong>4.7 kΩ balances two failure modes.</strong> Larger, and the RC with parasitic capacitance rounds edges at 250 Hz; smaller, and the sensor sinks too much. At 4.7 kΩ: 0.7 mA sink, adequate edge rate.</li>
-      <li><strong>The generalisable lesson:</strong> a datasheet voltage tells you what a part outputs, not what it can output into a load.</li>
+      <li><strong>The generalisable lesson:</strong> read the output <em>topology</em> before picking a conditioning circuit. Open-collector, push-pull and passive outputs fail in completely different ways, and a divider only makes sense for one of them.</li>
     </ul>
 
     <h3>Where it ended up</h3>

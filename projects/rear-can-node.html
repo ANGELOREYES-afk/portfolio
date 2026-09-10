@@ -6,8 +6,8 @@
 <title>Rear CAN Node PCB — Angelo Reyes</title>
 <meta name="description" content="A distributed CAN node for Texas A&amp;M Baja SAE 2027 — STM32G431RBTx, native FDCAN, TVS-protected sensor front ends, and a four-layer layout.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
-<link rel="stylesheet" href="../assets/css/site.css?v=7">
-<script src="../assets/js/site.js?v=7"></script>
+<link rel="stylesheet" href="../assets/css/site.css?v=8">
+<script src="../assets/js/site.js?v=8"></script>
 </head>
 <body>
 
@@ -60,9 +60,9 @@
     <h2>1 — The sensor front ends</h2>
 
     <p>
-      The two RPM channels are the reason this board is interesting. They are both "RPM," and
-      they need <strong>opposite</strong> circuits — because one arrives analog and one arrives
-      already digital.
+      The two RPM channels are the reason this board is interesting. Both are
+      <strong>open-collector</strong> — both sink and neither sources — yet they need different
+      circuits, because they live in different <strong>voltage domains</strong>.
     </p>
 
     <figure>
@@ -77,20 +77,20 @@
 
     <div class="ba">
       <div class="b1">
-        <h5>Primary — analog in, digital out</h5>
+        <h5>Primary — open-collector, 12 V domain</h5>
         <p>
-          A variable-reluctance pickup swings bipolar and its amplitude rises with engine speed,
-          so there is no fixed logic level to read. The divider scales it, the Schottky pair
-          clamps whatever survives to within a diode drop of the rails, and the TVS takes the
-          transient the divider is too slow for.
+          The spark pickup gives one open-collector pulse per ignition event, referenced to its
+          12 V supply — roughly 4× the MCU's absolute maximum. The board scales it with a
+          divider, clamps what survives to within a diode drop of the rails with the Schottky
+          pair, and puts a TVS at the connector for the transient the divider is too slow for.
         </p>
       </div>
       <div class="b2">
-        <h5>Secondary — digital in, digital out</h5>
+        <h5>Secondary — open-collector, 5 V domain</h5>
         <p>
-          The hall sensor is open-collector: it can pull the line down but never up. One pull-up
-          resistor is the entire signal conditioning, and its rail — not the sensor's 5 V supply
-          — sets the logic-high level the MCU sees.
+          Same output topology, easier voltage. One pull-up resistor is the entire signal
+          conditioning, and its rail — not the sensor's 5 V supply — sets the logic-high level
+          the MCU sees, so it lands on 3.3 V logic with no translation stage.
         </p>
       </div>
     </div>
@@ -99,11 +99,11 @@
       <h4>Bench fix vs. board fix</h4>
       <p>
         On the Arduino bench the inductive channel was rebuilt around a <strong>2N3904 used as a
-        switch</strong>, because the divider there collapsed under the sensor's source
-        impedance. This board keeps a <strong>divider</strong>, with Schottky and TVS clamping
-        added around it. Those are two different answers to the same problem, and which one is
-        correct depends on load: worth confirming against the sensor on the bench before this
-        revision is fabricated.
+        level translator</strong>, after the divider there let the logic-high sag to 2.4 V. This
+        board still carries the <strong>divider</strong>, with Schottky and TVS clamping added
+        around it. Since an open-collector output has nothing of its own to pull the line high,
+        a divider without a pull-up is the wrong topology — <strong>this needs re-testing
+        against the sensor before the board is fabricated.</strong>
       </p>
     </div>
 
