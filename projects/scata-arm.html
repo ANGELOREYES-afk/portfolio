@@ -450,6 +450,55 @@
       <li><strong>Current-limit update latency over CAN</strong> — sets how fast the soft-limiter host loop must run.</li>
     </ul>
 
+    <!-- ============ 8 ============ -->
+    <h2>8 — Power board: regen brake and precharge</h2>
+
+    <figure class="portrait">
+      <img src="../assets/img/scata-arm-im6014.jpg" alt="The robot arm: white 3D-printed joint housings connected by black carbon-fibre tubes, on an aluminium base, with power wiring running down the base link.">
+      <figcaption>
+        <b>Figure 5.</b> The current arm build: 3D-printed joint housings and carbon-fibre tube
+        links on Unitree IM6014 actuators, run from a 36 V bench supply.
+      </figcaption>
+    </figure>
+
+    <p>
+      A bench supply can source current but cannot sink it. When the actuators decelerate hard,
+      they push energy back onto the 36 V bus, and with nowhere to go the bus voltage climbs
+      toward the controllers' 44 V limit. This board sits between the supply and the motors to
+      handle that, and to stop the bulk capacitors from sparking the connectors on power-up.
+    </p>
+
+    <ul class="tight">
+      <li><strong>Precharge.</strong> A TPS48111-Q1 charges the bus through two 60 Ω PTCs. At 60% of the supply a comparator switches in the main CSD19536KTT FET, slew-limited to about 3 A into 4000 µF.</li>
+      <li><strong>Reverse blocking.</strong> An LM5050-1 ideal diode keeps regen out of the supply.</li>
+      <li><strong>Brake chopper.</strong> A TL431 reference and LM393 comparator with hysteresis drive an IRFB4110 through a UCC27517. It turns on at 40.2–42.2 V (trimmer-set) and off about 2 V lower, dumping into a 4.7 Ω 100 W resistor.</li>
+      <li><strong>Protection and outputs.</strong> 25 A / 58 V fuse, TVS on input and bus, three XT30 motor outputs, a 12 V rail, a bus-voltage ADC output and a brake flag.</li>
+    </ul>
+
+    <div class="gallery fit">
+      <figure>
+        <img src="../assets/img/scata-regen-pcb-top.jpg" alt="PCB layout, top copper: wide red power pours, three XT30 outputs along the top edge, four large electrolytic capacitor footprints.">
+        <figcaption><b>Figure 6.</b> Layout, top. 2 layers, 2 oz copper, 96.5 × 128 mm.</figcaption>
+      </figure>
+      <figure>
+        <img src="../assets/img/scata-regen-pcb-bottom.jpg" alt="PCB layout, bottom copper: a near-solid blue ground pour with a few signal traces.">
+        <figcaption><b>Figure 7.</b> Layout, bottom — mostly a solid ground return.</figcaption>
+      </figure>
+      <figure>
+        <img src="../assets/img/scata-regen-schematic-main.jpg" alt="Main schematic sheet: input fuse and TVS, ideal diode, bulk capacitors, 12 V regulator, brake comparator, gate driver and brake FET.">
+        <figcaption><b>Figure 8.</b> Main sheet: input, brake chopper, 12 V rail.</figcaption>
+      </figure>
+      <figure>
+        <img src="../assets/img/scata-regen-schematic-precharge.jpg" alt="Precharge schematic sheet: TPS48111 controller, PTC precharge path and main FET switch-over comparator.">
+        <figcaption><b>Figure 9.</b> Precharge sheet.</figcaption>
+      </figure>
+    </div>
+
+    <p>
+      Rev 3 passes ERC and DRC with schematic parity, against rules set to 2 oz fab limits. It is
+      ready to fabricate; the real current draw of the arm has not been measured yet.
+    </p>
+
     <nav class="artnav">
       <a href="baja-daq.html">← Baja DAQ</a>
       <a href="orp-sensor.html">ORP Sensor →</a>
